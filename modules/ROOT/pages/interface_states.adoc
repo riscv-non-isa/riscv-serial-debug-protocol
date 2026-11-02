@@ -1,0 +1,42 @@
+[[states]]
+= Interface states
+
+An RSDP-DTM or RSDPJ-DTM is always in one of four interface states, defined below.
+Only switching sequences, described in <<switching_sequence>>, can change the interface state.
+
+An RSDP-DTM or RSDPJ-DTM must support at least one of the <<rsdp_robust_state,RSDP-ROBUST>> or <<rsdp_fast_state,RSDP-FAST>> states.
+
+[[disabled_state]]
+== DISABLED state
+
+In <<disabled_state,DISABLED>> state, the DTM does not respond to any transaction.
+This must be the initial state of an RSDP-DTM.
+
+An RSDPJ-DTM may start in this state to allow the extra JTAG pins to be used for functional I/O until the <<enable_jtag_sequence,ENABLE-JTAG>> sequence is received.
+This also protects the JTAG interface against unintended communication.
+Any debugger that purely uses JTAG then has to be programmed to send the <<enable_jtag_sequence,ENABLE-JTAG>> sequence as a list of JTAG state transitions before communicating with the target.
+
+An RSDP-DTM or RSDPJ-DTM must support the DISABLED state.
+
+[[rsdp_robust_state]]
+== RSDP-ROBUST state
+
+In <<rsdp_robust_state,RSDP-ROBUST>> state, the DTM communicates the robust variant of the protocol.
+
+See <<fast_robust_interface_states>> for key differences between <<rsdp_robust_state,RSDP-ROBUST>> and <<rsdp_fast_state,RSDP-FAST>>.
+
+[[rsdp_fast_state]]
+== RSDP-FAST state
+
+In <<rsdp_fast_state,RSDP-FAST>> state, the DTM communicates the fast variant of the protocol.
+This interface state transfers fewer bits, both due to the missing <<crc_field,CRC>> field and shorter <<start_field,START>> field and because there is no need to execute <<nop_transaction,NOP>> transactions.
+
+See <<fast_robust_interface_states>> for key differences between <<rsdp_fast_state,RSDP-FAST>> and <<rsdp_robust_state,RSDP-ROBUST>>.
+
+[[jtag_state]]
+== JTAG state
+
+<<jtag_state,JTAG>> state only exists in an RSDPJ-DTM.
+This is the only state where the extra TDI and TDO pins as well as the JTAG state machine are enabled.
+
+An RSDPJ-DTM may start in this state to be able to act as a fully compliant JTAG-DTM.

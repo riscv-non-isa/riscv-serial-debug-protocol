@@ -1,5 +1,5 @@
-= RISC-V Example Specification Document (Zexmpl)
-Authors: Author 1, Author 2
+= RISC-V Serial Debug Protocol Specification
+Authors: Ingo Rohloff, Mathias Sandner, Albrecht Mayer
 include::../docs-resources/global-config.adoc[]
 ifndef::revnumber[:revnumber: v0.0]
 ifndef::revdate[:revdate: 1/2023]
@@ -45,7 +45,6 @@ ifdef::backend-pdf[]
 :source-highlighter: coderay
 endif::[]
 :data-uri:
-:hide-uri-scheme:
 :stem: latexmath
 :footnote:
 :xrefstyle: short
@@ -91,8 +90,22 @@ Copyright 2026 by RISC-V International.
 [preface]
 include::../modules/ROOT/pages/contributors.adoc[leveloffset=+1]
 
-include::../modules/ROOT/pages/intro.adoc[leveloffset=+1]
-include::../modules/ROOT/pages/chapter2.adoc[leveloffset=+1]
+:imagesdir: ../modules/ROOT/images
+
+include::../modules/ROOT/pages/introduction.adoc[leveloffset=+1]
+include::../modules/ROOT/pages/system_overview.adoc[leveloffset=+1]
+include::../modules/ROOT/pages/physical_interface.adoc[leveloffset=+1]
+include::../modules/ROOT/pages/interface_states.adoc[leveloffset=+1]
+include::../modules/ROOT/pages/transactions.adoc[leveloffset=+1]
+include::../modules/ROOT/pages/escape_sequences.adoc[leveloffset=+1]
+include::../modules/ROOT/pages/error_handling.adoc[leveloffset=+1]
+include::../modules/ROOT/pages/crc_computation.adoc[leveloffset=+1]
+include::../modules/ROOT/pages/rsdpxsp.adoc[leveloffset=+1]
+include::../modules/ROOT/pages/rsdpxcpl.adoc[leveloffset=+1]
+[appendix]
+include::../modules/ROOT/pages/example_transaction_sequences.adoc[leveloffset=+1]
+include::../modules/ROOT/pages/performance_comparison.adoc[leveloffset=+1]
+include::../modules/ROOT/pages/reference_implementation.adoc[leveloffset=+1]
 
 // The index must precede the bibliography. The index macro is PDF-only (Antora
 // does not generate a back-of-book index), so it lives here in the assembler

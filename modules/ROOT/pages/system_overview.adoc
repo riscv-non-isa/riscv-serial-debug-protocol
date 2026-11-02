@@ -1,0 +1,133 @@
+[[system_overview]]
+= System overview (non-normative)
+
+The _RISC-V Debug Specification_ cite:[riscv-debug-spec-1.0] defines the concept of a Debug Transport Module (DTM) along with one specific implementation, the JTAG-DTM.
+A DTM acts as a link between an off-chip interface to a Debug Module Interface (DMI), which is essentially a very simple bus that only supports 32-bit read/write accesses to a small address space.
+This address space commonly contains one or more Debug Module (DM) instances, which provide the actual debug functionality for one or more RISC-V hardware threads (harts).
+
+With the JTAG-DTM, a simplified view of the system is as follows:
+
+[[fig_dtm_sytem]]
+.RISC-V platform and debugger, simplified view
+image::dtm_system.svg[]
+
+This specification establishes an alternative to the JTAG-DTM that can operate at high speeds, offers robustness features and only uses two single-ended I/O pins.
+To reduce duplication, it takes advantage of the fact that there already exists a perfectly viable specification for a RISC-V DTM, namely the JTAG-DTM.
+The JTAG-DTM can conceptually be split into two parts, the JTAG transport and DMI bus manager:
+
+[[fig_jtag_dtm]]
+.JTAG-DTM split into two parts
+image::jtag_dtm.svg[]
+
+The JTAG transport implements the 4-pin JTAG interface, the state machine and shift registers that provide read-write access to three relevant registers, namely <<idcode_register,idcode>>, <<dtmcs_register,dtmcs>> and <<dmi_register,dmi.>>
+In the context of the JTAG-DTM, the relevant operation is a read of one of these registers (Capture-DR state) followed by a write to the same register (Update-DR state).
+
+The DMI bus manager implements these three registers and contains the state machine and other logic to access DMI subordinates.
+It is specific to a particular implementation-defined DMI bus.
+
+To implement a RISC-V Serial Debug Protocol DTM (RSDP-DTM), only the JTAG transport is replaced by a different transport that is reasonably simple, efficient and optionally robust in the presence of bit errors:
+
+[[fig_tw_dtm]]
+.Possible RSDP-DTM implementation
+image::tw_dtm.svg[]
+
+Reusing the existing JTAG-DTM register specification greatly simplifies the handling of DMI bus errors, needing no additional specification.
+It is expected that it will be easy to convert an existing JTAG-DTM implementation into an RSDP-DTM implementation by replacing the JTAG state machine and shift registers, as opposed to requiring a new implementation for each DMI variant.
+
+[[fast_robust_interface_states]]
+== RSDP-FAST and RSDP-ROBUST interface states
+
+Both performance and robustness are important characteristics of a debug protocol. In some cases, however, increasing robustness comes with a trade-off in performance, and vice versa.
+
+That is why this specification provides the choice between two interface states: <<rsdp_fast_state,RSDP-FAST>> (with focus on performance), and <<rsdp_robust_state,RSDP-ROBUST>> (with focus on robustness). The most important differences between these two interface states are listed in the table below:
+
+[[table_fast_robust_comparison]]
+.Key differences between RSDP-FAST and RSDP-ROBUST
+[%header,cols="2,5,5"]
+|===
+|
+| <<rsdp_fast_state,RSDP-FAST>>
+| <<rsdp_robust_state,RSDP-ROBUST>>
+
+| Robustness
+| Unprotected <<start_field,START>> field. +
+No <<crc_field,CRC>> field. +
+Limited error detection and error recovery.
+| Protected <<start_field,START>> field. +
+Has <<crc_field,CRC>> field. +
+Full detection of any single bit error, with corresponding error recovery.
+
+| Performance
+| Allows operation at high frequencies. +
+Efficient encoding.
+| Allows operation at high frequencies. +
+Slightly less efficient due to larger <<start_field,START>> and <<crc_field,CRC>> fields, and the need to execute <<nop_transaction,NOP>> transactions.
+
+| Transaction Type Determination
+| The type of a transaction is determined by the <<tt_field,TT>> field of that _current_ transaction.
+| The type of a transaction is determined by the <<tt_field,TT>> field of the _previous_ transaction. +
+{empty} +
+This way, the type (and therefore size and layout) of a transaction is already known before that transaction starts. This avoids that certain transmission errors can lead to false assumptions about the existence and position of fields in a transaction.
+|===
+
+See <<performance_comparison>> for a detailed performance comparison and <<error_handling>> for a detailed description how the robustness features can be used by a debugger.
+
+== Option for compatibility with JTAG
+
+Some RISC-V platforms will still need JTAG for compatibility with JTAG-only tools or for JTAG-only features such as boundary scan.
+To take advantage of the RSDP protocol's robustness and to use the extra JTAG pins for functional I/O, a combined JTAG and RISC-V Serial Debug Protocol DTM (RSDPJ-DTM) can use the existing JTAG transport and a simple multiplexer, as in the following figure:
+
+[[fig_twj_dtm]]
+.Possible RSDPJ-DTM implementation
+image::twj_dtm.svg[]
+
+== Option for single-pin debugging
+
+In pin-constrained applications, the RSDP protocol can be converted to a single-pin variant.
+This requires a free-running constant clock source inside the target system, as in the following figure:
+
+// same figure as fig_rsdpxsp_block
+[[fig_rsdpxsp_system]]
+.Possible RISC-V platform with RSDPxSP transport
+image::rsdpxsp_system.svg[]
+
+See <<rsdpxsp>> for more details on the RSDPxSP protocol.
+
+== Option for debugging over CAN physical layer
+
+The RSDPxSP protocol can also be used to use the CAN physical layer, for example for closed-chassis analysis of field returns:
+
+// same figure as fig_rsdpxcpl_block
+[[fig_rsdpxcpl_system]]
+.Possible RISC-V platform with RSDPxCPL transport
+image::rsdpxcpl_system.svg[]
+
+See <<rsdpxcpl>> for more details on the RSDPxCPL protocol.
+
+== RSDP protocol properties
+
+*Simplicity* is provided by
+
+* Reusing the semantics, in particular of bus error conditions, of the existing JTAG-DTM standard
+* Enabling reuse of existing components, even sharing much of the physical logic in an RSDPJ-DTM
+* A truly synchronous physical two-pin interface, without start/stop conditions as found in I2C/I3C or escapes as found in cJTAG
+* A fixed request-response transaction format without variable delay and timeout condition in the response
+
+*Efficiency* is provided by
+
+* An efficient encoding that only transfers the data that is actually needed
+* A line encoding that allows input/output register stages on I/O pins
+* An ordering of operations that means that in most cases while a DMI bus transaction is in progress, the previous transaction's read data or the next transaction's write data can be transferred, virtually eliminating the need for artificial idle cycles or polling
+
+*Robustness* is provided by
+
+* Interface enabling patterns with at least 150 relevant bits
+* Optional CRC, implemented such that the length of each transaction is deduced by CRC-protected information
+* Facilities to recover from a detected transmission error without unintended DMI bus transactions or loss of data
+
+*Flexibility* is provided by
+
+* Option to focus on performance (<<rsdp_fast_state,RSDP-FAST>> interface state) or robustness (<<rsdp_robust_state,RSDP-ROBUST>> interface state)
+* Option to operate in JTAG mode for legacy debuggers or JTAG-only features like boundary scan
+* Option for single-pin debugging
+* Option for debugging via the CAN physical layer

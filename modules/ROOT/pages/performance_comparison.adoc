@@ -1,0 +1,94 @@
+[[performance_comparison]]
+= Performance comparison
+
+This section compares the performance of the RSDP protocol to that of JTAG and cJTAG, the only DTMs mentioned in the RISC-V Debug Specification.
+
+The RSDP protocol described in this specification is expected to allow even higher clock frequencies than the JTAG protocol.
+The protocol is carefully designed to allow for dedicated I/O registers for input and output data.
+Additionally, one full clock cycle is dedicated to data direction turn-around, which should avoid any timing bottlenecks for these clock cycles.
+
+In contrast to JTAG, no half-cycle timings are needed (rising-to-falling edge or falling-to-rising edge timings).
+Whether this advantage manifests in a real implementation highly depends on how the implementation is done.
+Therefore, the following calculations assume that JTAG and RSDP protocol run at the same frequency.
+
+It is _unrealistic_ to assume the same for cJTAG.
+cJTAG does have an _external_ half cycle timing requirement when transferring TDO data, which means in reality the achievable clock frequency is often half of the achievable clock frequency via JTAG.
+
+For the following calculations, the assumption is that cJTAG can be operated at 66% of the frequency of JTAG, which is already pretty optimistic.
+
+A DMI with 7 address bits is assumed.
+This favors JTAG and cJTAG because only the RSDP protocol has a "short address" transaction format.
+
+For JTAG and cJTAG, it is assumed that only a single TAP is in the JTAG chain.
+Exactly one Run-Test/Idle cycle is assumed to be used between DR scans.
+This is optimistic because higher clock frequencies will likely require extra Run-Test/Idle cycles to prevent busy errors.
+
+With these assumptions, a DR scan of the <<dmi_register,dmi>> register takes 41 Shift-DR cycles plus the Select-DR-Scan, Capture-DR, Exit-1-DR, Update-DR and Run-Test/Idle cycle, for a total of 46 cycles.
+
+Ignoring the payloads, a <<rsdp_robust_state,RSDP-ROBUST>> transaction takes a total of 28 cycles, while a <<rsdp_fast_state,RSDP-FAST>> transaction takes 12 cycles.
+Any address, write data and read data bits transferred in the transaction have to be accounted for separately.
+
+== Scenarios
+
+The focus is on DMI bus accesses that are realized with accesses to the <<dmi_register,dmi>> register.
+Therefore, it is assumed that the JTAG instruction register (IR) is already loaded with the DMI instruction.
+Likewise, the enable sequences of the RSDP protocol are ignored, as these have to be sent only once per debug session.
+
+=== Single access to DMI
+
+A single write access requires two accesses to the <<dmi_register,dmi>> register: One for setting command, address and data and one for checking for the success of the operation.
+
+For JTAG, this translates to two DR scans, totaling 92 cycles.
+For cJTAG, this amounts to three times the number of cycles at 66&nbsp;% of the frequency, giving an equivalent of 414 cycles.
+
+For <<rsdp_fast_state,RSDP-FAST>>, this translates to two transactions of 12 cycles, and the 7 address bits and 32 data bits must additionally be accounted for, totaling 63 cycles.
+
+For <<rsdp_robust_state,RSDP-ROBUST>>, three transactions are required due to TT pipelining and each transaction requires 28 cycles, plus the same payload bits as for <<rsdp_fast_state,RSDP-FAST>>, totaling 123 cycles.
+
+For a read access to the DMI, the same number of JTAG scans or RSDP transactions is required and the same amount of payload data is transferred, so the numbers are exactly the same.
+
+=== DMI pipelined access to 16 32-bit words
+
+To perform 16 DMI write accesses in a pipelined fashion, 17 accesses to the <<dmi_register,dmi>> register are needed.
+The first access only sends the first command, address and data.
+The final access only checks for the success of the final operation.
+The 15 accesses in between check the success of the previous operation while sending a new command, address and data.
+
+For JTAG, this translates to 17 DR scans, totaling 782 cycles.
+For cJTAG, this amounts to three times the number of cycles at 66&nbsp;% of the frequency, giving an equivalent of 3519 cycles.
+
+For <<rsdp_fast_state,RSDP-FAST>>, this translates to 17 transactions of 12 cycles, and the 7 address bits of the first transaction, latexmath:[$15 \cdot 2$] address bits of subsequent transactions and latexmath:[$16 \cdot 32] data bits must additionally be accounted for, totaling 753 cycles.
+
+For <<rsdp_robust_state,RSDP-ROBUST>>, 18 transactions are needed due to TT pipelining and each transaction requires 28 cycles, plus the same payload bits as for <<rsdp_fast_state,RSDP-FAST>>, totaling 1053 cycles.
+
+To perform 16 DMI read accesses or even any mix of 16 DMI read or write accesses, the same number of JTAG scans or RSDP transactions is required and the same amount of payload data is transferred, so the numbers are exactly the same.
+
+== Overview
+
+These are the numbers of cycles calculated above:
+
+[[table_performance_cycles]]
+.Number of cycles for different operations in different debug protocols
+[%header,cols="1,1,1,1,1"]
+|===
+| Operation     | JTAG | cJTAG | <<rsdp_fast_state,RSDP-FAST>> | <<rsdp_robust_state,RSDP-ROBUST>>
+| Single access |   92 |   414 |        63 |         123
+| 16 accesses   |  782 |  3519 |       753 |        1053
+|===
+
+Given as a relative efficiency compared to JTAG:
+
+[[table_performance_relative]]
+.Relative performance of different operations in different debug protocols compared to JTAG-DTM
+[%header,cols="1,1,1,1,1"]
+|===
+| Operation     | JTAG       | cJTAG       | <<rsdp_fast_state,RSDP-FAST>>    | <<rsdp_robust_state,RSDP-ROBUST>>
+| Single access | 100&nbsp;% | 22.2&nbsp;% | 146.0&nbsp;% | 74.8&nbsp;%
+| 16 accesses   | 100&nbsp;% | 22.2&nbsp;% | 103.9&nbsp;% | 74.3&nbsp;%
+|===
+
+It can be seen that <<rsdp_fast_state,RSDP-FAST>> performance exceeds JTAG performance while saving two pins.
+<<rsdp_robust_state,RSDP-ROBUST>> only shows a loss of approximately 30&nbsp;% of performance, both for raw data rate in block transfers as well as latency of single accesses.
+This is in contrast to cJTAG which even with optimistic assumptions loses more than 75&nbsp;% of performance compared to JTAG.
+
+As it is likely that the RSDP protocol can be run at higher frequencies than JTAG, it is expected that even <<rsdp_robust_state,RSDP-ROBUST>> will outperform JTAG in practice.

@@ -1,0 +1,113 @@
+[[reference_implementation]]
+= Reference implementation
+
+A reference implementation of the RSDP transport described in <<system_overview>> can be found at https://gitlab.com/lauterbach/riscv-rsdp-vhdl-ref.
+It has the following port interface:
+
+[[fig_riscv_tw_hw]]
+.Reference implementation black-box diagram
+image::refimpl_blackbox.svg[]
+
+This module has the following signals:
+
+[[table_reference_signals]]
+.Signals of the reference implementation
+[%header,cols="1,5"]
+|===
+| Signal
+| Description
+
+| `iRst`
+| Asynchronous active-high power-on reset.
+
+| `iRSDP_Clk`
+| Connect to RCLK I/O pin. All Interfaces of the RSDP transport are synchronous to the rising edge of this clock.
+
+| `iRSDP_Data`
+| Connect to RDAT I/O input buffer's output.
+
+| `oRSDP_DataDir`
+| Connect to RDAT I/O output buffer's enable/tristate control. The level of this pin can be configured with the `gDrive` generic.
+
+| `oRSDP_Data`
+| Connect to RDAT I/O output buffer's input.
+
+| `oUseJtag`
+| To implement an RSDPJ-DTM, use this signal to multiplex between the RSDP transport and the JTAG transport's signals.
+  A `'0'` level means that the RSDP transport's signals should be used, a `1` level means that the JTAG transport's signals should be used.
+  In <<disabled_state,DISABLED>> state, `oUseJtag`, `oJtag_CapDR` and `oJtagUpdDR` are kept at `0`.
+  This signal can be ignored if an RSDP-DTM is implemented.
+
+| `oJtag_Instr`
+| JTAG instruction register.
+  This signal is valid at least two cycles before `oJtag_CapDR` or `oJtagUpdDR`.
+  This allows the DMI bus manager implementation to implement a pipelined decoder for the IR.
+
+| `oJtag_CapDR`
+| Capture strobe, which indicates that the JTAG TAP Controller is in the JTAG Capture-DR state and samples the data provided on the `iJtag_Op` and `iJtag_Data` inputs.
+
+| `iJtag_Op`
+| Two bit _op_ field from a <<dmi_register,dmi>> access, sent to debugger, transferred via TDO.
+
+|`iJtag_Data`
+| 32 bit data value, sent to debugger, transferred via TDO. +
+  This either corresponds to <<dmi_register,dmi>> read data or <<dtmcs_register,dtmcs>> read value or <<idcode_register,idcode>> value, depending on `oJtag_Instr`.
+
+| `oJtag_UpdDR`
+| Update strobe, which indicates that the JTAG TAP controller is in the JTAG Update-DR state.
+
+| `oJtag_Op`
+| Two bit _op_ field for a <<dmi_register,dmi>> access, sent from debugger, transferred via TDI.
+
+| `oJtag_Addr`
+| n bit address value used for a <<dmi_register,dmi>> access.
+
+| `oJtag_Data`
+| 32 bit data value, sent from debugger, transferred via TDI. +
+  This either corresponds to <<dmi_register,dmi>> write data or <<dtmcs_register,dtmcs>> write value, depending on `oJtag_Instr`.
+|===
+
+It has the following VHDL generics:
+
+[[table_reference_generics]]
+.VHDL generics of the reference implementation
+[%header,cols="1,1,4"]
+|===
+| Signal
+| Type
+| Description
+
+| `gDrive`
+| `STD_LOGIC`
+| Logic level to use on `oRSDP_DataDir` to indicate that the pin should be driven.
+
+| `gAddressWidth`
+| `NATURAL`
+| Number of address bits. Must be at least 7 and at most 34.
+
+| `gCrcSupport`
+| `BOOLEAN`
+| If set to `true`, the module supports the <<rsdp_robust_state,RSDP-ROBUST>> interface state.
+  <<rsdp_fast_state,RSDP-FAST>> is always supported by this reference implementation.
+
+| `gStartInJtag`
+| `BOOLEAN`
+| Whether to start in <<jtag_state,JTAG>> interface state.
+  When this is set to `false`, the interface state after reset is <<disabled_state,DISABLED>>.
+  Since the only difference between these two states is the `oUseJtag` output, this generic only has an effect if that pin is used to multiplex with a JTAG transport.
+|===
+
+It is assumed that the DMI bus manager inside an existing JTAG-DTM has similar signals to the `*Jtag_*` signals of this reference implementation.
+Some adaptation may be necessary if the bus manager uses different signals.
+
+By replacing the JTAG transport of a JTAG-DTM by this reference implementation of an RSDP transport, the DMI bus manager of a JTAG-DTM can be reused to implement an RSDP-DTM.
+Alternatively, by also using the JTAG transport, it is possible to implement an RSDPJ-DTM.
+
+Replacing the JTAG transport like this may break some expectations that the DMI bus manager may have as it was written with a JTAG transport in mind.
+In particular, the following potential issues have to be checked:
+
+* In JTAG, Capture-DR and Update-DR always occur in pairs in that order.
+  The RSDP transport allows single Capture-DR strobes for the <<idcode_register,idcode>> and <<dtmcs_register,dtmcs>> registers as well as single Update-DR strobes for the <<dtmcs_register,dtmcs>> register.
+* For the <<dmi_register,dmi>> register, Capture-DR and Update-DR always occur in pairs, but with only two clock cycles distance.
+  This is technically possible even with JTAG, but as this would only happen without any shift states, the debugger would neither see the Capture-DR data nor would it have any control over the Update-DR data.
+  Therefore, this sequence is unlikely to ever happen in a JTAG-DTM debug scenario and may be unexpected by the DMI bus manager.

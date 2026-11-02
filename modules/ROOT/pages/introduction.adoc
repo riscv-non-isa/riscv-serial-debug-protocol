@@ -1,0 +1,65 @@
+[[introduction]]
+= Introduction
+
+This specification describes a new RISC-V Serial Debug Protocol (RSDP), implemented by two additional types of Debug Transport Module (DTM) in addition to the JTAG-DTM from the _RISC-V Debug Specification_ cite:[riscv-debug-spec-1.0]:
+
+* An RSDP DTM (RSDP-DTM) that translates two I/O signals into an on-chip DMI manager.
+* A combined RSDP and JTAG DTM (RSDPJ-DTM) that utilizes the same four JTAG signals as the JTAG-DTM, but can operate in an RSDP interface state. Like any DTM, its purpose is to act as an on-chip DMI manager.
+
+RSDP uses the behavior and register descriptions from the JTAG-DTM described in _RISC-V Debug Specification v1.0_, section&nbsp;6.1 cite:[riscv-debug-spec-1.0].
+Subordinates on the DMI bus may conform to any version of the _RISC-V Debug Specification_ or any other specification.
+
+== Terminology
+
+This document uses or defines the following terms and abbreviations:
+
+normative and non-normative::
+Normative parts of this document are part of the specification.
+These include all numbered sections not explicitly marked as non-normative.
+Non-normative parts are for context, to clarify the purpose of the specification and to help with implementations.
+The Appendix is non-normative.
+must, must not, required, shall, shall not, should, should not, recommended, may, optional::
+These key words are to be interpreted as in RFC2119 cite:[rfc2119].
+target::
+A RISC-V platform that is to be debugged.
+For the purposes of this specification, it is assumed to include an RSDP-DTM.
+debugger::
+The agent that connects to the target and accesses its state.
+RSDP::
+The RISC-V Serial Debug Protocol and its variants specified in this document.
+RSDP state::
+General term for <<rsdp_robust_state,RSDP-ROBUST>> state and <<rsdp_fast_state,RSDP-FAST>> state.
+RSDP-DTM::
+A Debug Transport Module that implements this specification and does not include an alternate JTAG interface state.
+RSDPJ-DTM::
+A Debug Transport Module that implements this specification and can alternatively act as a JTAG-DTM.
+[[dmi_register]]
+dmi::
+The dmi register as described in _RISC-V Debug Specification_, section&nbsp;6.1.5 cite:[riscv-debug-spec-1.0].
+Additional clarifications about fields in this register can be found in <<dmi_transactions>>.
+[[zero_hold]]
+zero hold-time requirement::
+A timing specification indicating that the receiver should latch data at or before the corresponding clock edge and the sender should launch data after the clock edge.
+Data must be stable for some time immediately preceding the clock edge, but may change immediately after the clock edge.
+[[launch_latch]]
+launch, latch::
+In timing specifications, launching is the act of a clocked driver of a data line changing the signal to a new value, while latching is the act of sampling the signal.
+The terms are used to specify both the clock edge where these events occur as well as timing parameters.
+
+[[wire_format]]
+== Serial transmission format
+
+Data that is transmitted over the physical pin interface is described as in the following example:
+
+[source,plaintext]
+----
+/ FIELDA / FIELDB /                                  -- This is a comment
+/ 0b0 /
+----
+
+Lines enclosed in `/ ... /` represent bits sent via the RDAT wire.
+These bit sequences are always sent top to bottom, left to right.
+All multi-bit fields are sent in little-endian bit order.
+Constants given in binary are sent with the same number of bits that is contained in the constant.
+
+The example means that FIELDA is sent first (starting with its least significant bit), then FIELDB, then a constant binary field containing a single 0 bit.

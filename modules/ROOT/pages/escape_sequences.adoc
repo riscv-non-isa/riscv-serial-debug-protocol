@@ -1,0 +1,243 @@
+[[sequences]]
+= Escape sequences
+
+Escape sequences are sent by the debugger as a form of out-of-band transmission.
+They are used to switch between interface states (see <<states>>) or to recover from error conditions (see <<error_handling>>).
+
+Inside the target, sequences are detected independently of the normal transactions described in <<transactions>>.
+They are encoded in a way that encodes harmless state transitions in JTAG that are very unlikely to be sent by a real JTAG tool.
+In the RSDP interface states, the long string of `'1'`-bits at the beginning of the sequence will put the target into an error state where it will not interpret the rest of the sequence as transactions.
+
+[[switching_sequence]]
+== Switching sequences
+
+The sequences <<disable_sequence,DISABLE>>, <<enable_robust_sequence,ENABLE-ROBUST>>, <<enable_fast_sequence,ENABLE-FAST>> and <<enable_jtag_sequence,ENABLE-JTAG>> allow the debugger to switch to any interface state from any other state.
+
+[[disable_sequence]]
+=== DISABLE sequence
+
+The <<disable_sequence,DISABLE>> sequence is transmitted as follows:
+
+[source,plaintext]
+----
+/ escape(DISABLE) /                                  -- Sequence from debugger
+----
+
+There is no reply from the target.
+After receiving this sequence, the target must be in the <<disabled_state,DISABLED>> state.
+
+[[enable_robust_sequence]]
+=== ENABLE-ROBUST sequence
+
+The <<enable_robust_sequence,ENABLE-ROBUST>> sequence and its response from the target are transmitted as follows:
+
+[source,plaintext]
+----
+/ escape(ENABLE-ROBUST) /                            -- Sequence from debugger
+/ 0b0 / START = 0b011 / STAT / VERSION / CRC / 0b0 / -- Response from target
+/ 0b0 /                                              -- Debugger drives line
+----
+
+If the target supports the <<rsdp_robust_state,RSDP-ROBUST>> state, it must be in that state after receiving this sequence.
+The <<stat_field,STAT>> field contains the constant value <<table_stat_encoding,SUCCESS>>.
+
+If the target does not support the <<rsdp_robust_state,RSDP-ROBUST>> state, it will treat the sequence like the <<disable_sequence,DISABLE>> sequence without sending a response.
+
+[[enable_fast_sequence]]
+=== ENABLE-FAST sequence
+
+The <<enable_fast_sequence,ENABLE-FAST>> sequence and its response from the target are transmitted as follows:
+
+[source,plaintext]
+----
+/ escape(ENABLE-FAST) /                              -- Sequence from debugger
+/ 0b0 / START = 0b1 / STAT / VERSION / 0b0 /         -- Response from target
+/ 0b0 /                                              -- Debugger drives line
+----
+
+If the target supports the <<rsdp_fast_state,RSDP-FAST>> state, it must be in that state after receiving this sequence.
+The <<stat_field,STAT>> field contains the constant value <<table_stat_encoding,SUCCESS>>.
+
+If the target does not support the <<rsdp_fast_state,RSDP-FAST>> state, it will treat the sequence like the <<disable_sequence,DISABLE>> sequence without sending a response.
+
+[[enable_jtag_sequence]]
+=== ENABLE-JTAG sequence
+
+The <<enable_jtag_sequence,ENABLE-JTAG>> sequence is transmitted as follows:
+
+[source,plaintext]
+----
+/ escape(ENABLE-JTAG) /                              -- Sequence from debugger
+----
+
+If the target supports the <<jtag_state,JTAG>> state, it must be in that state after receiving this sequence.
+
+If the target does not support the <<jtag_state,JTAG>> state, it will treat the sequence like the <<disable_sequence,DISABLE>> sequence.
+
+[[retransmit_sequence]]
+== RETRANSMIT sequence
+
+The <<retransmit_sequence,RETRANSMIT>> sequence is transmitted as follows:
+
+[source,plaintext]
+----
+/ escape(RETRANSMIT) /                               -- Sequence from debugger
+/ 0b0 / START = 0b011 / SEQ / RCRC /                 -- Response from target
+/ STAT / RD-PAYLOAD / CRC / 0b0 /                    -- Retransmitted response
+/ 0b0 /                                              -- Debugger drives line
+----
+
+If the target is in the <<rsdp_robust_state,RSDP-ROBUST>> state, it must send both a response to the sequence as well as a retransmitted response.
+The fields marked as _Retransmitted response_ must have exactly the same contents as the target's last transmitted response.
+
+If the target is not in the <<rsdp_robust_state,RSDP-ROBUST>> state, it will treat the sequence like the <<disable_sequence,DISABLE>> sequence without sending a response.
+
+[[unknown_sequence]]
+== UNKNOWN sequences
+
+The <<unknown_sequence,UNKNOWN>> sequences are any `/ escape(...) /` encodings of sequence types not defined in this specification.
+
+Only a sequence that is correctly encoded (constant fields and <<sequence_scrc_field,SCRC>> field as expected) is treated as <<unknown_sequence,UNKNOWN>>.
+Anything else is silently ignored by the sequence detector.
+
+A target conforming to this version of the specification must not send a reply and enter the <<disabled_state,DISABLED>> state.
+Future versions of this specification may specify additional sequences, for example for new interface states or for multi-drop support.
+
+NOTE: A target can use <<unknown_sequence,UNKNOWN>> as a fallback handler for any of the enable sequences for states it does not support.
+      For example, an RSDP-DTM that only supports the <<rsdp_fast_state,RSDP-FAST>> state only needs to handle the <<enable_fast_sequence,ENABLE-FAST>> sequence and can treat any other sequence as <<unknown_sequence,UNKNOWN>>/<<disable_sequence,DISABLE>> sequence.
+
+[[sequence_fields]]
+== Sequence fields
+
+The following fields are exclusive to escape sequences.
+
+[[sequence_escape_encoding]]
+=== escape() encoding
+
+Each sequence starts with a long bit string sent by the debugger with the following properties:
+
+* If interpreted by a JTAG TAP, the bits correspond to a harmless sequence of transitions between Shift-DR and Pause-DR states while the IDCODE or BYPASS register is selected.
+* If interpreted in any of the RSDP states, the bits are detected as invalid transactions with no side effects.
+* The bit string contains a pseudorandom sequence of bits, providing noise immunity while allowing for efficient detection in hardware.
+
+An <<sequence_escape_encoding,escape(st)>> field is transmitted as follows:
+
+[source,plaintext]
+----
+/ ONES / JTAG_BEGIN / enc(RANDOM) / enc(ST=st) / enc(SCRC) / JTAG_END /
+----
+
+The type of sequence is encoded in the <<sequence_st_field,ST>> field.
+
+According to these rules, a debugger may use the following table to send these sequences:
+
+[[table_sequences]]
+.Encodings of escape sequences
+[%header,cols="2,1,5"]
+|===
+| field
+| length
+| RDAT bits (least significant bit is sent first)
+
+| `escape(DISABLE)`       | 150 | `0x184004928A54A44542FFFFFFFFFFFFFFFFFFFF`
+| `escape(ENABLE-ROBUST)` | 151 | `0x320014928A54A44542FFFFFFFFFFFFFFFFFFFF`
+| `escape(ENABLE-FAST)`   | 153 | `0x0D28024928A54A44542FFFFFFFFFFFFFFFFFFFF`
+| `escape(ENABLE-JTAG)`   | 154 | `0x1AA0054928A54A44542FFFFFFFFFFFFFFFFFFFF`
+| `escape(RETRANSMIT)`    | 154 | `0x1A92044928A54A44542FFFFFFFFFFFFFFFFFFFF`
+|===
+
+[[sequence_ones_field]]
+=== ONES field
+
+The <<sequence_ones_field,ONES>> field is a sequence of 80 `/ 1b1 /` bits.
+This ensures that a JTAG TAP will be in Test-Logic-Reset state and an enabled RSDP-DTM will be in its error state.
+
+The target must detect this field independently of any other state.
+After receiving at least 80 consecutive  `/ 1b1 /`, it must treat the next `/ 0b0 /` bit as the first bit of the <<sequence_jtag_begin_field,JTAG_BEGIN>> field.
+
+While the target is driving the RDAT line, it may suspend its detection of the <<sequence_ones_field,ONES>> field.
+
+NOTE: Any sequence or transaction response from the target is guaranteed to be shorter than 80 bits and includes `/ 1b0 /` bits.
+      Therefore, it cannot be detected as a <<sequence_ones_field,ONES>> field.
+      However, if the target is targeting high frequencies, it may be problematic for it to sample its own transmitted data.
+      Disabling the sequence detector or feeding it with a constant `0` signal avoids this issue.
+
+A debugger that attaches from an unknown state should send a sufficient number of RCLK cycles with RDAT tristated to ensure that the target finishes any potential response, followed by at least 80 `/ 1b1 /` bits.
+
+[[sequence_jtag_begin_field]]
+=== JTAG_BEGIN field
+
+The <<sequence_jtag_begin_field,JTAG_BEGIN>> field is the fixed 3-bit sequence `/ 010 /`.
+This transitions the JTAG state machine into the Capture-DR state, while the IR value is still the IDCODE command.
+
+[[sequence_enc_encoding]]
+=== enc() encoding
+
+The payload part of the sequence is sent using an encoding that ensures the JTAG state machine stays in the DR shift path.
+
+Each `'0'` bit of the payload is sent as the sequence `/ 0b0 /`, ensuring that the state machine enters the Shift-DR or Pause-DR state without any other state.
+Each `'1'` bit of the payload is sent as the sequence `/ 0b01 /`, corresponding to either the Exit-1-DR or Exit-2-DR state followed by either the Pause-DR or Shift-DR state.
+
+[[sequence_random_field]]
+=== RANDOM field
+
+The <<sequence_random_field,RANDOM>> field is a 32-bit pseudorandom constant intended to prevent misinterpretation of noise or real JTAG operations as an enable sequence.
+
+It is generated by initializing the CRC generator described in <<crc>> with the constant `0x38` and repeating the following algorithm 32 times:
+
+. Use the least significant bit of the CRC state as data.
+. Feed the CRC generator with a single 0 bit.
+
+This field is always `/ RANDOM = 0xAB376938 /`.
+The CRC state after generating this sequence is `0x3F`.
+
+[[sequence_st_field]]
+=== ST field
+
+The 8-bit <<sequence_st_field,ST>> (sequence type) field determines the type of sequence.
+The following values are defined:
+
+[[table_st_encoding]]
+.Encoding of the ST field
+[%header,cols="1,4"]
+|===
+| sequence type | <<sequence_st_field,ST>> value
+| DISABLE       | `0x00`
+| ENABLE-ROBUST | `0x01`
+| ENABLE-FAST   | `0x02`
+| ENABLE-JTAG   | `0x03`
+| RETRANSMIT    | `0x04`
+| UNKNOWN       | <any other value>
+|===
+
+[[sequence_scrc_field]]
+=== SCRC field
+
+The SCRC field contains a 6-bit value computed over all the data following the <<sequence_random_field,RANDOM>> field.
+The CRC generator described in <<crc>> is fed with the unencoded data: It receives the value of `/ ST /`, not `/ enc(ST) /`.
+
+[[sequence_jtag_end_field]]
+=== JTAG_END field
+
+The <<sequence_jtag_end_field,JTAG_END>> field is the fixed 3-bit sequence `/ 0b011 /`.
+This transitions the JTAG state machine into the Run-Test/Idle state and also drives the RDAT line LOW for the target's response included in some sequences.
+
+[[version_seq_field]]
+=== VERSION field
+
+The <<version_seq_field,VERSION>> contains a 32-bit value with information about the RSDP-DTM or RSDPJ-DTM implementation.
+
+The last significant four bits are defined as the constant value `0x1`.
+The remaining bits must be ignored by the debugger, but must be sent as zero by a target.
+Their use, as well as the meaning of other version numbers, is not defined by this version of this document.
+
+[[seq_seq_field]]
+=== SEQ field
+
+The 2-bit <<seq_seq_field,SEQ>> (sequence counter) field contains the number of error-free transaction requests that the target has received since the last <<enable_robust_sequence,ENABLE-ROBUST>> sequence, modulo 4.
+
+[[seq_rcrc_field]]
+=== RCRC field
+
+The <<seq_rcrc_field,RCRC>> field is a 6-bit value computed over all data following the <<start_field,START>> field.
+Refer to <<crc>> for calculation of this value.

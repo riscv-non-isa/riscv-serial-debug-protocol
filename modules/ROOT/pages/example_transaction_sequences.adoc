@@ -1,0 +1,111 @@
+[[example_transaction_sequences]]
+= Example transaction sequences
+
+The following examples illustrate how a debugger can use the RSDP protocol.
+The diagrams follow the same convention as described in <<wire_format>>.
+
+[[example_attach]]
+== Attaching to a target
+
+The following sequences show how to connect to a target.
+The enable sequence is sent to switch the target into the desired interface state, then the **<<idcode_register,idcode>>** and **<<dtmcs_register,dtmcs>>** registers are read.
+Finally, if the values match expectations, the DMI bus manager is reset by writing **`0x00020000`** to <<dtmcs_register,dtmcs>>, setting the <<dtmcs_register,dtmcs.dtmhardreset>> field.
+
+Using the <<rsdp_fast_state,RSDP-FAST>> variant of the protocol, this is very straightforward:
+
+[[fig_example_attach_fast]]
+.Attaching to a target using the RSDP-FAST variant of the protocol
+image::example_attach_fast.svg[]
+
+<<<
+With the <<rsdp_robust_state,RSDP-ROBUST>> variant, an extra <<nop_transaction,NOP>> transaction is required at the beginning as well as any time the debugger needs the result of one transaction in order to decide on the type of the next transaction:
+
+[[fig_example_attach_robust]]
+.Attaching to a target using the RSDP-ROBUST variant of the protocol
+image::example_attach_robust.svg[]
+
+If any of the responses from the target have bit errors, a robust behavior is to retry the entire sequence.
+If repeated attempts of sending the enable sequence fail without a response from the target, the debugger might try the other RSDP state in case the target only supports one of these interface states.
+
+<<<
+[[example_dmi_read]]
+== Single DMI read
+
+The following sequence shows how to perform a single DMI read from address **raddr**, returning success in **rstat** and the read data in **rdata**.
+It is assumed that the attach sequence has completed, and therefore the value of <<dtmcs_register,dtmcs.abits>> is known, as is the width of addresses sent as part of the <<wr_payload_field,WR-PAYLOAD>> field.
+It is assumed that the target is already in the correct interface state and that any errors from previous DMI transactions have been cleared.
+
+In <<rsdp_fast_state,RSDP-FAST>> state, this requires two transactions:
+
+[[fig_example_dmi_rd_1_fast]]
+.Executing a single DMI read in RSDP-FAST state
+image::example_dmi_rd_1_fast.svg[]
+
+The <<stat_field,STAT>> field of the first transaction must contain <<table_stat_encoding,SUCCESS>> as any previous errors are assumed to have been cleared.
+The <<stat_field,STAT>> field of the second transaction indicates whether the read operation was successful.
+If it was not, it must be cleared by writing to the <<dtmcs_register,dtmcs>> register.
+
+In <<rsdp_robust_state,RSDP-ROBUST>> state, this requires three transactions, assuming the previous transaction used `/ TT=NOP /`:
+
+[[fig_example_dmi_rd_1_robust]]
+.Executing a single DMI read in RSDP-ROBUST state
+image::example_dmi_rd_1_robust.svg[]
+
+The <<stat_field,STAT>> field of the first transaction contains the constant <<table_stat_encoding,SUCCESS>> as defined in <<transactions>>.
+The <<stat_field,STAT>> field of the second transaction must contain <<table_stat_encoding,SUCCESS>> as any previous errors are assumed to have been cleared.
+The <<stat_field,STAT>> field of the third transaction indicates whether the read operation was successful.
+If it was not, it must be cleared by writing to the <<dtmcs_register,dtmcs>> register.
+
+<<<
+[[example_dmi_write]]
+== Single DMI write
+
+The following sequence shows how to perform a single DMI write of **wdata** to address **waddr**, returning success in **rstat**.
+It is assumed that the attach sequence has completed and the value of <<dtmcs_register,dtmcs.abits>> is therefore known, as is the width of addresses sent as part of the <<wr_payload_field,WR-PAYLOAD>> field.
+It is assumed that the target is already in the correct interface state and that any errors from previous DMI transactions have been cleared.
+In <<rsdp_fast_state,RSDP-FAST>> state, this requires two transactions:
+
+[[fig_example_dmi_wr_1_fast]]
+.Executing a single DMI write in RSDP-FAST state
+image::example_dmi_wr_1_fast.svg[]
+The <<stat_field,STAT>> field of the first transaction must contain <<table_stat_encoding,SUCCESS>> as any previous errors are assumed to have been cleared.
+The <<stat_field,STAT>> field of the second transaction indicates whether the write operation was successful.
+If it was not, it must be cleared by writing to the <<dtmcs_register,dtmcs>> register.
+
+In <<rsdp_robust_state,RSDP-ROBUST>> state, this requires three transactions, assuming the previous transaction used `/ TT=NOP /`:
+
+[[fig_example_dmi_wr_1_robust]]
+.Executing a single DMI write in RSDP-ROBUST state
+image::example_dmi_wr_1_robust.svg[]
+
+The <<stat_field,STAT>> field of the first transaction contains the constant <<table_stat_encoding,SUCCESS>> as defined in <<transactions>>.
+The <<stat_field,STAT>> field of the second transaction must contain <<table_stat_encoding,SUCCESS>> as any previous errors are assumed to have been cleared.
+The <<stat_field,STAT>> field of the third transaction indicates whether the write operation was successful.
+If it was not, it must be cleared by writing to the <<dtmcs_register,dtmcs>> register.
+
+<<<
+[[example_dmi_pipelining]]
+== Three pipelined DMI writes
+
+The following sequence shows how to perform three consecutive DMI writes of **wdata0**/**wdata1**/**wdata2** to addresses **waddr0**/**waddr1**/**waddr2**, returning success in **wstat0**/**wstat1**/**wstat2**.
+It is assumed that the addresses are either all equal or only differ in their two least significant bits, showcasing how the <<dmi_transactions,DMI_WR_SA>> transaction type can be used.
+It is assumed that the attach sequence has completed and the value of <<dtmcs_register,dtmcs.abits>> is therefore known, as is the width of addresses sent as part of the <<wr_payload_field,WR-PAYLOAD>> field.
+It is assumed that the target is already in the correct interface state and that any errors from previous DMI transactions have been cleared.
+In <<rsdp_fast_state,RSDP-FAST>> state, this requires four transactions:
+
+[[fig_example_dmi_wr_3_fast]]
+.Executing three pipelined DMI write in RSDP-FAST state
+image::example_dmi_wr_3_fast.svg[]
+
+The `/ STAT /` field of the final three transactions correspond to the three write operations.
+Due to sticky behavior, if any of the writes fail, the subsequent writes will not be attempted.
+
+<<<
+In <<rsdp_robust_state,RSDP-ROBUST>> state, this requires five transactions, assuming the previous transaction used `/ TT=NOP /`:
+
+[[fig_example_dmi_wr_3_robust]]
+.Executing three pipelined DMI write in RSDP-ROBUST state
+image::example_dmi_wr_3_robust.svg[]
+
+The `/ STAT /` field of the final three transactions correspond to the three write operations.
+Due to sticky behavior, if any of the writes fail, the subsequent writes will not be attempted.

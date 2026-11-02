@@ -4,5 +4,7 @@
 This RISC-V specification has been contributed to directly or indirectly by:
 
 [%hardbreaks]
-* Author1 <required1@email.com>
-* Author2 <required2@email.com>
+* Albrecht Mayer <albrecht.mayer@infineon.com>
+* Ingo Rohloff <ingo.rohloff@lauterbach.com>
+* Markus Goehrle <markus.goehrle@lauterbach.com>
+* Mathias Sandner <mathias.sandner@lauterbach.com>

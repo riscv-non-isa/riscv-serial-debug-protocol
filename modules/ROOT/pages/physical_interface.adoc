@@ -1,0 +1,160 @@
+[[physical_interface]]
+= Physical interface
+
+The RSDP-DTM uses two signals to communicate with the debugger:
+
+RCLK, debugger to target::
+Frequency is controlled by the debugger.
+RDAT, bi-directional::
+Should be connected to a pull-up resistor on the target for compliance with JTAG.
+The protocol does not rely on this pullup, see <<turnaround>> for details.
+
+For the RSDPJ-DTM, the RSDP RCLK and RDAT signals are shared with the JTAG TCK and TMS signals, respectively.
+The TDI and TDO signals are not used in RSDP state and may be used for functional I/O.
+An RSDPJ-DTM in JTAG interface state follows the timing and protocol from the _RISC-V Debug Specification_ cite:[riscv-debug-spec-1.0] and _IEEE 1149.1_ cite:[ieee-1149.1-2013].
+
+Regardless of the interface state, the target must <<launch_latch,latch>> the RDAT line on the rising edge of the RCLK line.
+In <<rsdp_robust_state,RSDP-ROBUST>> or <<rsdp_fast_state,RSDP-FAST>> state, it must <<launch_latch,launch>> the RDAT line (data and tristate controls) on the rising edge of the RCLK line.
+A target should implement a <<zero_hold,zero hold-time requirement>> on the RDAT receiver.
+It should minimize the setup time of the RDAT receiver and the clock-to-output time of the RDAT transmitter.
+
+A debugger must be able to <<launch_latch,launch>> RDAT on falling edges and <<launch_latch,latch>> RDAT on falling edges.
+In this mode, any setup and hold-time requirements and propagation delays can be compensated by reducing the clock frequency.
+
+NOTE: To support higher frequencies, a debugger may optimize its sampling point, for example by oversampling the RDAT line and looking for the rising edge of the <<start_field,START>> field in the response from the target.
+      It may also implement a mode that makes use of the <<zero_hold,zero hold-time requirement>> on the target's RDAT receiver by launching RDAT near the rising edge of the RCLK line.
+
+In idle periods between transactions, the debugger can either stop toggling the RCLK line or it can send a continuous stream of '0' bits on the RDAT line.
+
+[[turnaround]]
+== RDAT turnaround at low frequencies
+
+To maximize compatibility with existing hardware, RSDP does not depend on a pull resistor on the RDAT line to maintain state.
+In normal operation, the line is always driven by either the target or the debugger.
+Depending on exact timing, it can be driven low by both debugger and target while the direction of the RDAT line changes.
+In case of transmission errors detected by the debugger or target, it may be undriven for some RCLK cycles.
+
+At each point where the RDAT line turns around, the protocol ensures that both the final cycle driven by the old driver and the first cycle driven by the new driver are low.
+
+<<figure_turnaround_d2t>> details the point in time where the RDAT line switches between being driven by the debugger to being driven by the target.
+Between RCLK rising edges A and B, the debugger must begin driving the final `/ 0b0 /` bit for the target to be able to latch it at rising edge B.
+As the target is the receiver of the RCLK signal, it can only begin driving RDAT after rising edge B.
+Likewise, the debugger must tristate the RDAT signal before rising edge C, while the target will begin driving `/ START /` after rising edge C.
+
+[[figure_turnaround_d2t]]
+.Turnaround of RDAT line from debugger to target
+[wavedrom,target=turnaround_d2t,svg]
+----
+{
+	signal: [
+		{                                node: '.......A.....B.....C.....'},
+		{name: 'RCLK',                   wave: 'lh..l..h..l..h..l..h..l..'},
+		{name: 'RDAT (debugger, early)', wave: '2.2.....0.....z..........',
+		                                 node: '...........I.............'},
+		{name: 'RDAT (debugger, late)',  wave: '2.....2.....0.....z......',
+		                                 node: '...............J.........'},
+		{name: 'RDAT (target, early)',   wave: 'z............0.....1.....',
+		                                 node: '................K.....L..'},
+		{name: 'RDAT (target, late)',    wave: 'z.................0.....1',
+		                                 node: '.....................M...'},
+	],
+	edge: [
+		'A-|A A',
+		'B-|B B',
+		'C-|C C',
+		'I-|I / 0b0 / at end of request',
+		'J-|J / 0b0 / at end of request',
+		'K-|K / 0b0 / at start of response',
+		'L-|L / START /',
+		'M-|M / 0b0 / at start of response',
+	]
+}
+----
+
+<<figure_turnaround_t2d>> details the point in time where the RDAT line switches between being driven by the target to being driven by the debugger.
+Assuming the debugger uses its driven RCLK signal to sample RDAT, the target must begin driving the final `/ 0b0 /` before point D.
+The debugger will begin driving the line low after point D.
+Likewise, the target will stop driving RDAT before point E, while the debugger may drive the start bit of the next transaction after point E.
+
+[[figure_turnaround_t2d]]
+.Turnaround of RDAT line from target to debugger
+[wavedrom,target=turnaround_t2d,svg]
+----
+{
+	signal: [
+		{                                node: '..........D.....E........'},
+		{name: 'RCLK',                   wave: 'hl..h..l..h..l..h..l..h..'},
+		{name: 'RDAT (debugger, early)', wave: 'z..........0.....2.....2.', data: ['/ START / or idle'],
+		                                 node: '..............I..........'},
+		{name: 'RDAT (debugger, late)',  wave: 'z..............0.....2...', data: ['/ START / or idle'],
+		                                 node: '..................J......'},
+		{name: 'RDAT (target, early)',   wave: '2...0.....z..............',
+		                                 node: '.......K.................'},
+		{name: 'RDAT (target, late)',    wave: '2..2.....0.....z.........',
+		                                 node: '............L............'},
+	],
+	edge: [
+		'D-|D D',
+		'E-|E E',
+		'I-|I / 0b0 /',
+		'J-|J / 0b0 /',
+		'K-|K / 0b0 / at end of response',
+		'L-|L / 0b0 / at end of response',
+	]
+}
+----
+
+== RDAT turnaround at high frequencies
+
+The information in <<turnaround>> is sufficient for any debugger that does not wish to support extremely high frequencies.
+In the presence of extreme delays compared to the RCLK period, usually at high clock frequencies, additional measures are required.
+
+At the turnaround from debugger to target, it is guaranteed that there is no drive conflict on the RDAT line.
+However, long delays can cause the RDAT line to be driven by neither side for some time.
+The debugger may rely on the undriven time being sufficiently short such that a potential pull-up resistor will not cause it to detect an incorrect start bit.
+It may also implement a delay time where it ignores the RDAT line to ensure the target is driving it.
+
+At the turnaround from target to debugger, the debugger must insert a gap in its generated RCLK signal to account for the round-trip delay from RCLK through the target back to the debugger's RDAT input.
+<<figure_turnaround_t2d_fast>> shows an example where this delay is longer than a nominal RCLK period.
+Point F marks the rising RCLK edge that causes the target to start sending the final `/ 0b0 /` bit, while Point G marks the point that causes the target to tristate the RDAT line.
+After point H, where the debugger samples the final `/ 0b0 /` bit from the target, it may begin driving its initial `/ 0b0 /` bit, along with restarting the RCLK signal, shown here at point I.
+With this procedure, the RDAT line is undriven for some time and can thus float to an unpredictable state.
+However, this is invisible to the target, which only samples RDAT line at rising RCLK edges.
+
+[[figure_turnaround_t2d_fast]]
+.Turnaround of RDAT line from target to debugger at high frequencies
+[wavedrom,target=turnaround_t2d_fast,svg]
+----
+{
+	signal: [
+		{                         node: '.F...G....H......I....'},
+		{name: 'RCLK',            wave: 'lh.l.h.l.........h.l.h',
+		                          node: '.A...X................'},
+		{name: 'RDAT (debugger)', wave: 'z.............0...2...', data: ['/ START / or idle'],
+		                          node: '..............D.E.....'},
+		{name: 'RDAT (target)',   wave: '2...2...0...z.........',
+		                          node: '........B.C.Y.........'},
+	],
+	edge: [
+		'F-|F F',
+		'G-|G G',
+		'H-|H H',
+		'I-|I I',
+		'A->B',
+		'C->D',
+		'X->Y',
+		'C-|C / 0b0 /',
+		'E-|E / 0b0 /',
+	]
+}
+----
+
+[[connector]]
+== Debug connector
+
+It is recommended to use the debug connectors mentioned in the _RISC-V Debug Specification_, section&nbsp;6.1.7 cite:[riscv-debug-spec-1.0].
+
+When using a JTAG connector for RSDP, the RCLK line must use the TCK pin of the connector and the RDAT line must use the TMS pin of the connector.
+For an RSDP-DTM, the remaining JTAG-only pins (TDO, TDI, TRST) may be left unconnected or may be used for alternate functions as specified for that connector.
+
+When using a JTAG connector for RSDPxSP, the SP line must use the TMS pin of the connector and the remaining JTAG-only pins (TCK, TDO, TDI, TRST) may be left unconnected or may be used for alternate functions as specified for that connector.

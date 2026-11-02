@@ -1,0 +1,24 @@
+[[crc]]
+= CRC computation
+
+The CRC polynomial used is the one mentioned in the _ITU Recommendation G.704_, figure&nbsp;A.1 cite:[itu_g704].
+This is a reference input of the polynomial in C:
+
+[source,c]
+----
+static uint32_t crc6(bool inBit, uint32_t crc) {
+    uint32_t poly = 0x30;
+    uint32_t next;
+
+    next = crc >> 1;
+    if (((crc & 0x1) ^ inBit) != 0)
+        next ^= poly;
+    return next;
+}
+----
+
+To compute the <<crc_field,CRC>> field in the <<rsdp_robust_state,RSDP-ROBUST>> state or the <<sequence_rcrc_field,RCRC>> field of a <<retransmit_sequence,RETRANSMIT>> sequence:
+
+. Initialize a variable `crcState` to `0x3F`.
+. Feed each bit following the <<start_field,START>> field by calls to `crcState = crc6(dataBit, crcState)`, in the order they appear on the RDAT line.
+. Send the <<crc_field,CRC>> field as `/ CRC = crcState /`.

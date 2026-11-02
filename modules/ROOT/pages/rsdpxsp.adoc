@@ -1,0 +1,228 @@
+[[rsdpxsp]]
+= RSDP over Single Pin (RSDPxSP)
+
+RSDPxSP is a single pin debug protocol.
+A target can optionally implement this protocol instead of or in addition to the two-pin RSDP protocol.
+<<fig_rsdpxsp_block>> shows an architecture that only supports the single-pin protocol.
+
+// same figure as fig_rsdpxsp_system
+[[fig_rsdpxsp_block]]
+.RSDPxSP block diagram
+image::rsdpxsp_system.svg[]
+
+RSDPxSP encodes the RSDP bits that would normally be sent over the RCLK and RDAT lines via a single pin (SP), using the distance between signal edges to carry information.
+A RDAT value of `'0'` is encoded with a short, a value of `'1'` with a long distance.
+
+In the target, RSDPxSP may be implemented as an _RSDPxSP converter_ module that uses the SP pin to generate the RCLK and RDAT inputs to the RSDP-DTM and receives the RDAT output enable and value outputs from the RSDP-DTM.
+
+RSDPxSP offers a calibration and activation sequence that allows both sides to establish a common time base as well as preventing random signal changes from activating the interface.
+Furthermore, an RSDP enable sequence is required to move the RSDP-DTM out of <<disabled_state,DISABLED>> state, adding further robustness.
+
+An example RSDP transaction with request from the debugger and response from the target looks as follows:
+
+[[fig_rsdpxsp_example]]
+.Example RSDPxSP transaction
+[wavedrom,target=fsdpxsp_transaction,svg]
+----
+{signal: [
+	{name: 'SP (debugger)',    wave: '0...1...0.1.0...1..|0.z.'},
+	{name: 'SP (converter)',   wave: 'z..................|....'},
+	{name: 'state',            wave: '2...2..............|....', data: ['IDLE', 'RECEIVE']},
+	{name: 'RCLK',             wave: 'p...l....plplpl..pl|.pl.'},
+	{name: 'RDAT (converter)', wave: '0.......1.0.....1..|....'},
+	{name: 'RDAT (DTM)',       wave: 'z..................|....'},
+	{},
+	{},
+	{},
+	{name: 'SP (debugger)',    wave: 'z..............|.....0..'},
+	{name: 'SP (converter)',   wave: 'z.....0...1.0..|1.0.z...'},
+	{name: 'state',            wave: '2.2...2........|....2...', data: ['RECEIVE', 'IDLE', 'TRANSMIT', 'IDLE']},
+	{name: 'RCLK',             wave: 'l..p..lpl..plpl|.pl..p..'},
+	{name: 'RDAT (converter)', wave: '1.0............|........'},
+	{name: 'RDAT (DTM)',       wave: 'z...010...1.0..|z.......'},
+]}
+----
+
+== RSDPxSP protocol
+
+The converter uses a free-running clock at a constant frequency as its time base.
+This clock is divided by a <<rsdpxsp_divider,divider>> to form the time quantum, the base unit to measure and set the distance between signal edges.
+
+[[rsdpxsp_times]]
+.Time units used by the target in RSDPxSP
+[cols="1,5", options="header"]
+|===
+| Time
+| Significance
+
+| 2 time quanta
+| Edge distance to transmit a `'0'`
+
+| 3 time quanta
+| Decision point between receiving a `'0'` and receiving a `'1'`
+
+| 4 time quanta
+| Edge distance to transmit a `'1'`
+
+| 6 time quanta
+| Decision point between receiving a `'1'` and detecting an idle or break condition
+|===
+
+Targets must transmit using exactly the edge distances given in <<rsdpxsp_times>> to allow the debugger to measure responses from the target and calculate the target's clock period, as described in <<rsdpxsp_debugger>>.
+
+After the calibration sequence, the debugger may use different edge distances to increase the margin to the target's decision points.
+
+NOTE: Allowing the debugger to deviate from the nominal timings is useful if the debugger uses a much faster clock than the target.
+      In that case, the target might operate with a very low <<rsdpxsp_divider,divider>> and may therefore have large quantization errors when measuring the edge distances sent by the debugger.
+
+Targets must sample the SP signal at their converter's clock frequency.
+The <<rsdpxsp_divider,divider>> is then used to measure the length of each SP pulse.
+Targets may use multiple registers on their SP input to protect against metastability.
+
+The converter behavior is described by the following state diagram:
+
+.RSDPxSP converter state diagram
+[graphviz,target="rsdpxsp_states",svg,scale=60]
+....
+digraph rsdpxsp_states {
+	any                     [label="any state",shape="none"];
+	any       -> INACTIVE   [label="6 time quanta\lsince last edge\land SP high\l"];
+	INACTIVE  -> CALIBRATE  [label="falling edge received\l"];
+	CALIBRATE -> RECEIVE    [label="calibration successful\l"];
+	CALIBRATE -> FAILED     [label="calibration failed\l"];
+
+	RECEIVE   -> IDLE       [label="6 time quanta\lsince last edge\land SP low\l"];
+	IDLE      -> RECEIVE    [label="rising edge received\l"];
+
+	IDLE      -> TRANSMIT   [label="RSDP-DTM asserts\loutput enable and sends '1'\l"];
+	TRANSMIT  -> IDLE       [label="RSDP-DTM deasserts\loutput enable\l"];
+}
+....
+
+[[rsdpxsp_state_inactive]]
+=== INACTIVE state
+
+Inactive state is the initial state of the converter.
+It is entered when the SP line stays high for at least 6 time quanta.
+When a falling edge is received, the converter enters <<rsdpxsp_state_calibrate,CALIBRATE>> state.
+
+[[rsdpxsp_state_calibrate]]
+=== CALIBRATE state
+
+In <<rsdpxsp_state_calibrate,CALIBRATE>> state, it is assumed that the debugger sends at least 1100 `'0'` bits, that is edges that are 2 time quanta apart.
+The converter must use the first few edge distances to calculate a new <<rsdpxsp_divider,divider>> value and then verify that at least 1024 following edges have a distance of less than 3 time quanta.
+
+NOTE: This gives some freedom to the implementation how exactly the calibration is done, and allows some latency between calculation of the new <<rsdpxsp_divider,divider>> and using it to measure edge distances.
+
+Calculation of the divider value must round to the nearest value.
+
+NOTE: For example, if 16 `'0'` bits are to be used to calibrate the <<rsdpxsp_divider,divider>>, one way of performing this calculation is as follows:
+      On entering the <<rsdpxsp_state_calibrate,CALIBRATE>> state, initialize a counter to 17, then keep counting until the 16th successive SP edge has been received.
+      Right shift the counter by 5 (dividing by 32 as 16 `'0'` bits correspond to 32 time quanta) to obtain the new <<rsdpxsp_divider,divider>> value.
+      Starting the counter at 1 would correspond to round-towards-zero behavior, the additional offset of 16 changes this to round-to-nearest.
+      The counter needs to be 5 bits wider than the final <<rsdpxsp_divider,divider>> register and needs to be checked for overflow during calibration.
+
+If the resulting <<rsdpxsp_divider,divider>> value is outside of the converter's allowed range or any of the following `'0'` bits are not received correctly, the converter enters <<rsdpxsp_state_failed,FAILED>> state.
+
+When calibration is complete, the converter enters <<rsdpxsp_state_receive,RECEIVE>> state.
+The debugger may then either allow the converter to enter <<rsdpxsp_state_idle,IDLE>> state or it may directly proceed with one of the switching sequences described in <<switching_sequence>>.
+
+[[rsdpxsp_state_failed]]
+=== FAILED state
+
+This state marks a failed attempt at calibration.
+While in this state, the <<rsdpxsp_divider,divider>> value is set to its maximum value.
+
+[[rsdpxsp_state_receive]]
+=== RECEIVE state
+
+In <<rsdpxsp_state_receive,RECEIVE>> state, the SP converter generates RCLK pulses and RDAT values for each received edge of the SP pin.
+
+When 6 time quanta expire while the SP line is low, the converter enters <<rsdpxsp_state_idle,IDLE>> state.
+
+[[rsdpxsp_state_idle]]
+=== IDLE state
+
+In <<rsdpxsp_state_idle,IDLE>> state, the SP converter generates a continuous stream of RCLK pulses with RDAT low.
+
+When the debugger asserts the SP line, the converter enters the <<rsdpxsp_state_receive,RECEIVE>> state.
+When the RSDP-DTM asserts the RDAT output enable and sends a `'1'`, the converter enters the <<rsdpxp_state_transmit,TRANSMIT>> state.
+
+NOTE: This means the converter will not send the initial `/ 0b0 /` field of the response.
+
+[[rsdpxp_state_transmit]]
+=== TRANSMIT state
+
+In <<rsdpxp_state_transmit,TRANSMIT>> state, the converter transmits response bits from the RSDP-DTM, sending RCLK pulses as required to pace the data.
+This is the only state where the converter drives the SP line.
+
+When the RSDP-DTM deasserts the RDAT output enable, the converter will finish the correct number of quanta for the final bit from the RSDP-DTM (due to the RSDP protocol, this will be a `/ 0b0 /` field, i.e. 2 time quanta).
+After this, if the SP line is high, the converter sends an additional clock edge followed by two more time quanta.
+Finally, the converter returns to <<rsdpxsp_state_idle,IDLE>> state and tristates the SP line.
+
+[[rsdpxsp_divider]]
+== RSDPxSP clock divider
+
+The target uses an integral divider to set the effective frequency of the protocol.
+The minimum value of the divider is 2.
+The maximum value, and therefore the number of bits required to represent the divider, is implementation defined.
+
+Implementations should dimension their clock source and maximum divider such that operation with a time quantum of 50&nbsp;µs is possible.
+The time quantum corresponding to the maximum divider should be at most 2&nbsp;ms.
+Targets following these constraints can be attached to using the procedure described in <<rsdpxsp_attach>>.
+
+NOTE: These numbers are arbitrary.
+      The given time quantum corresponds to a signal that is equivalent to a 5&nbsp;kHz clock signal, placing low electrical requirements on the signal.
+      A maximum time quantum is needed to limit the pulse length required for the debugger to be certain that the target entered <<rsdpxsp_state_calibrate,CALIBRATE>> state.
+
+NOTE: Some platforms used for simulation may not be able to satisfy that requirement and require even longer quanta.
+      These platforms will require special debugger configuration.
+
+[[rsdpxsp_debugger]]
+== Debugger behavior
+
+The following sections describe the behavior a debugger can use to communicate with an RSDPxSP target.
+
+[[rsdpxsp_attach]]
+=== Attaching from an unknown state
+
+To attach to a target from any state, a debugger can use the following sequence:
+
+. Send a long high pulse on the SP line, for example 10&nbsp;ms, to ensure the converter is in <<rsdpxsp_state_inactive,INACTIVE>> state.
+. Perform calibration with a time quantum of 50&nbsp;µs, i.e. send an initial rising edge followed by at least 1100 further edges that are 100&nbsp;µs apart.
+. Send an <<enable_robust_sequence,ENABLE-ROBUST>> or <<enable_robust_sequence,ENABLE-FAST>> sequence and check the target's response.
+
+The debugger can then continue to communicate at this initial speed or it can attempt to switch to a higher frequency, as described in <<rsdpxsp_debugger_highspeed>>.
+
+=== Sending a transaction
+
+When sending the request part of a transaction, the debugger sends an initial SP edge, followed by the bits described in <<transaction_format>>.
+It can omit the final `/ 0b0 /` field of the request as well as any other trailing `'0'` bits.
+If the SP line is high after the final bit, it appends another `'0'` bit so the SP line ends up low.
+It then tristates the line after another 2 time quanta.
+
+The target will enter <<rsdpxsp_state_idle,IDLE>> state followed by <<rsdpxp_state_transmit,TRANSMIT>> state.
+After the transaction response has been received, the debugger waits for the SP line to return to low state and for the target to stop driving the SP line (2 time quanta) before starting the next transaction.
+
+After sending a request, the debugger waits at least 10 time quanta after its final transmitted edge before assuming that the target will not send a response.
+This ensures the target had time to enter <<rsdpxp_state_transmit,TRANSMIT>> state and compensates for any registers in the target's SP input or output path.
+
+[[rsdpxsp_debugger_highspeed]]
+=== Increasing the communication frequency
+
+The maximum frequency for reliable communication depends on the electrical properties of the SP pin and on the clock speed used by the target's converter.
+The former can in most cases only be determined through experimentation or configuration.
+For the latter, there exists a robust way to enable robust operation even at very low <<rsdpxsp_divider,divider>> values:
+
+. Read out the <<spdiv_register,spdiv>> register via an <<intbus_rd_transaction,INTBUS_RD>> transaction.
+. Measure the length of a response from the target to compute the clock frequency used by the converter.
+. Choose a new divider close to the desired effective frequency and perform a new calibration sequence.
+
+Assuming the debugger uses a clock speed or sampling rate that is much greater than the desired communication speed, the only speed limitations with this approach are electrical or due to frequency drift in the target converter's clock source.
+The debugger can continuously measure responses from the target to compensate for a drifting clock source.
+
+== Platforms with both RSDPxSP and regular RSDP interface
+
+When a target supports both RSDPxSP and the regular two-pin RSDP interface, escape sequences switch between the two modes.
+Both physical interfaces separately wait for an <<enable_robust_sequence,ENABLE-ROBUST>> or <<enable_robust_sequence,ENABLE-FAST>> sequence.
+When either interface receives such a sequence, the RSDP-DTM is immediately switched to that interface and generates the response.

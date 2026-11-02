@@ -1,0 +1,70 @@
+[[rsdpxcpl]]
+= RSDP over CAN physical layer (RSDPxCPL)
+
+RSDPxCPL is a debug protocol using the CAN physical layer to carry information.
+A target can optionally implement this protocol instead of or in addition to the two-pin RSDP protocol.
+
+The CAN bus physical layer is a bi-directional connection with differential encoding on a single pair of wires.
+An external CAN transceiver translates between the logical level of the TXD or RXD device pins and the electrically robust signaling of the CAN bus.
+This direction separated signaling with TXD or RXD is used to transmit RSDPxSP encoded transactions.
+
+== Application examples
+
+- An electrically robust tool connection for embedded applications
+- If the CAN bus signals are available at the control unit's connector, debug is possible without opening the housing, for instance to analyze field returns
+- Connecting automotive measurement and calibration tools for deeply embedded applications such as transmission ECUs within the gearbox
+
+== Architecture overview
+
+<<fig_rsdpxcpl_block>> shows an architecture with two debugger connection options:
+
+- A regular RSDP interface (could be overlaid to JTAG pins)
+- An RSDPxCPL interface overlayed to a regular CAN bus interface
+
+// same figure as fig_rsdpxcpl_system
+[[fig_rsdpxcpl_block]]
+.RSDPxCPL block diagram
+image::rsdpxcpl_system.svg[]
+
+After power-on reset, the RSDP MUX connects the RCLK and RDAT pins to the RSDP transport module and the CAN MUX connects the RX and TX pins to the CAN module.
+An activation pattern that cannot occur in regular CAN traffic switches both MUXes to the RSDPxSP converter.
+
+== Protocol
+
+The protocol used is the same as for RSDPxSP, described in <<rsdpxsp>>.
+Instead of the SP line, the protocol uses the CAN bus via transceivers, with a low SP corresponding to CAN recessive state and a high SP corresponding to CAN dominant state.
+
+The maximum <<rsdpxsp_divider,divider>> value of the target must be chosen such that the maximum time quantum is less than 0.3&nbsp;µs.
+As described in <<rsdpxcpl_activation_pattern>>, this prevents normal CAN or CAN&nbsp;FD traffic from being interpreted as an RSDPxCPL activation pattern.
+
+Correspondingly, the debugger must use a faster speed to initially connect to the target, for example a time quantum of 0.25&nbsp;µs.
+
+[[rsdpxcpl_activation_pattern]]
+== Activation pattern
+
+The RSDPxCPL activation pattern is the calibration sequence of RSDPxSP followed by a valid <<enable_robust_sequence,ENABLE-ROBUST>> or <<enable_fast_sequence,ENABLE-FAST>> sequence.
+This sequence contains 1024 signal changes with a distance of at most 0.6&nbsp;µs.
+
+The activation pattern will never occur inside any legal CAN traffic:
+
+- The CAN protocol consists of specific frames (data-frames, remote-frames, and error-frames) with a maximum length of up to 128 bits, where the last seven "End-of-Frame" bits are transmitted as `'1'`.
+  At least three more `'1'` bits must follow before the next frame can start
+- Normal CAN data exchange is made with 512 kbit/s, or at fastest 1 Mbit/s.
+  So a signal change will occur not faster than every 1-2 µs
+- For CAN FD the data payload of maximum 64 bytes is too small to have an unintended activation by a data pattern
+
+Further safeguarding:
+
+- RSDPxSP will assume a `'1'`-value whenever the time between two signal changes is longer than 0.9&nbsp;µs, which is the case at the latest at the end of every CAN FD frame
+- Whenever a `'1'` is detected before 1024 `'0'`-values have been seen, the whole activation sequence must be restarted
+- The RSDPxCPL activation is in two steps.
+  The first is the RSDPxSP calibration pattern, and the second a valid <<enable_robust_sequence,ENABLE-ROBUST>> or <<enable_fast_sequence,ENABLE-FAST>> sequence.
+  Only after the second step, the CAN module will be disconnected from the RX/TX pins
+
+For the special case that the tool is plugged on to a "live" bus, the following points must be considered:
+
+- Because the transmission of RSDPxSP conforming `'0'`-values represents a violation of the CAN protocol, any active CAN node will react by actively sending an error frame
+- This is repeated by the same or another node, until the internal error counter(s) overflow(s)
+- Eventually all nodes will reach this state and be disabled automatically
+- These error frames may disturb the RSDPxSP activation sequence when a `'1'` results from any bus conflict.
+  This may require that more than 1024 `'0'` values must be transmitted until the activation pattern is detected.
