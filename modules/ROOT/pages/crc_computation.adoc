@@ -21,4 +21,5 @@ To compute the <<crc_field,CRC>> field in the <<rsdp_robust_state,RSDP-ROBUST>> 
 
 . Initialize a variable `crcState` to `0x3F`.
 . Feed each bit following the <<start_field,START>> field by calls to `crcState = crc6(dataBit, crcState)`, in the order they appear on the RDAT line.
+. Complement each bit: `crcState = crcState ^ 0x3F`.
 . Send the <<crc_field,CRC>> field as `/ CRC = crcState /`.
