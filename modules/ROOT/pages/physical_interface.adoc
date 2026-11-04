@@ -13,16 +13,16 @@ For the RSDPJ-DTM, the RSDP RCLK and RDAT signals are shared with the JTAG TCK a
 The TDI and TDO signals are not used in RSDP state and may be used for functional I/O.
 An RSDPJ-DTM in JTAG interface state follows the timing and protocol from the _RISC-V Debug Specification_ cite:[riscv-debug-spec-1.0] and _IEEE 1149.1_ cite:[ieee-1149.1-2013].
 
-Regardless of the interface state, the target must <<launch_latch,latch>> the RDAT line on the rising edge of the RCLK line.
-In <<rsdp_robust_state,RSDP-ROBUST>> or <<rsdp_fast_state,RSDP-FAST>> state, it must <<launch_latch,launch>> the RDAT line (data and tristate controls) on the rising edge of the RCLK line.
-A target should implement a <<zero_hold,zero hold-time requirement>> on the RDAT receiver.
+Regardless of the interface state, the target must <<introduction.adoc#launch_latch,latch>> the RDAT line on the rising edge of the RCLK line.
+In <<interface_states.adoc#rsdp_robust_state,RSDP-ROBUST>> or <<interface_states.adoc#rsdp_fast_state,RSDP-FAST>> state, it must <<introduction.adoc#launch_latch,launch>> the RDAT line (data and tristate controls) on the rising edge of the RCLK line.
+A target should implement a <<introduction.adoc#zero_hold,zero hold-time requirement>> on the RDAT receiver.
 It should minimize the setup time of the RDAT receiver and the clock-to-output time of the RDAT transmitter.
 
-A debugger must be able to <<launch_latch,launch>> RDAT on falling edges and <<launch_latch,latch>> RDAT on falling edges.
+A debugger must be able to <<introduction.adoc#launch_latch,launch>> RDAT on falling edges and <<introduction.adoc#launch_latch,latch>> RDAT on falling edges.
 In this mode, any setup and hold-time requirements and propagation delays can be compensated by reducing the clock frequency.
 
-NOTE: To support higher frequencies, a debugger may optimize its sampling point, for example by oversampling the RDAT line and looking for the rising edge of the <<start_field,START>> field in the response from the target.
-      It may also implement a mode that makes use of the <<zero_hold,zero hold-time requirement>> on the target's RDAT receiver by launching RDAT near the rising edge of the RCLK line.
+NOTE: To support higher frequencies, a debugger may optimize its sampling point, for example by oversampling the RDAT line and looking for the rising edge of the <<transactions.adoc#start_field,START>> field in the response from the target.
+      It may also implement a mode that makes use of the <<introduction.adoc#zero_hold,zero hold-time requirement>> on the target's RDAT receiver by launching RDAT near the rising edge of the RCLK line.
 
 In idle periods between transactions, the debugger can either stop toggling the RCLK line or it can send a continuous stream of '0' bits on the RDAT line.
 

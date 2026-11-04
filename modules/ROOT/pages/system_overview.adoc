@@ -19,7 +19,7 @@ The JTAG-DTM can conceptually be split into two parts, the JTAG transport and DM
 .JTAG-DTM split into two parts
 image::jtag_dtm.svg[]
 
-The JTAG transport implements the 4-pin JTAG interface, the state machine and shift registers that provide read-write access to three relevant registers, namely <<idcode_register,idcode>>, <<dtmcs_register,dtmcs>> and <<dmi_register,dmi.>>
+The JTAG transport implements the 4-pin JTAG interface, the state machine and shift registers that provide read-write access to three relevant registers, namely <<transactions.adoc#idcode_register,idcode>>, <<transactions.adoc#dtmcs_register,dtmcs>> and <<introduction.adoc#dmi_register,dmi.>>
 In the context of the JTAG-DTM, the relevant operation is a read of one of these registers (Capture-DR state) followed by a write to the same register (Update-DR state).
 
 The DMI bus manager implements these three registers and contains the state machine and other logic to access DMI subordinates.
@@ -39,38 +39,38 @@ It is expected that it will be easy to convert an existing JTAG-DTM implementati
 
 Both performance and robustness are important characteristics of a debug protocol. In some cases, however, increasing robustness comes with a trade-off in performance, and vice versa.
 
-That is why this specification provides the choice between two interface states: <<rsdp_fast_state,RSDP-FAST>> (with focus on performance), and <<rsdp_robust_state,RSDP-ROBUST>> (with focus on robustness). The most important differences between these two interface states are listed in the table below:
+That is why this specification provides the choice between two interface states: <<interface_states.adoc#rsdp_fast_state,RSDP-FAST>> (with focus on performance), and <<interface_states.adoc#rsdp_robust_state,RSDP-ROBUST>> (with focus on robustness). The most important differences between these two interface states are listed in the table below:
 
 [[table_fast_robust_comparison]]
 .Key differences between RSDP-FAST and RSDP-ROBUST
 [%header,cols="2,5,5"]
 |===
 |
-| <<rsdp_fast_state,RSDP-FAST>>
-| <<rsdp_robust_state,RSDP-ROBUST>>
+| <<interface_states.adoc#rsdp_fast_state,RSDP-FAST>>
+| <<interface_states.adoc#rsdp_robust_state,RSDP-ROBUST>>
 
 | Robustness
-| Unprotected <<start_field,START>> field. +
-No <<crc_field,CRC>> field. +
+| Unprotected <<transactions.adoc#start_field,START>> field. +
+No <<transactions.adoc#crc_field,CRC>> field. +
 Limited error detection and error recovery.
-| Protected <<start_field,START>> field. +
-Has <<crc_field,CRC>> field. +
+| Protected <<transactions.adoc#start_field,START>> field. +
+Has <<transactions.adoc#crc_field,CRC>> field. +
 Full detection of any single bit error, with corresponding error recovery.
 
 | Performance
 | Allows operation at high frequencies. +
 Efficient encoding.
 | Allows operation at high frequencies. +
-Slightly less efficient due to larger <<start_field,START>> and <<crc_field,CRC>> fields, and the need to execute <<nop_transaction,NOP>> transactions.
+Slightly less efficient due to larger <<transactions.adoc#start_field,START>> and <<transactions.adoc#crc_field,CRC>> fields, and the need to execute <<transactions.adoc#nop_transaction,NOP>> transactions.
 
 | Transaction Type Determination
-| The type of a transaction is determined by the <<tt_field,TT>> field of that _current_ transaction.
-| The type of a transaction is determined by the <<tt_field,TT>> field of the _previous_ transaction. +
+| The type of a transaction is determined by the <<transactions.adoc#tt_field,TT>> field of that _current_ transaction.
+| The type of a transaction is determined by the <<transactions.adoc#tt_field,TT>> field of the _previous_ transaction. +
 {empty} +
 This way, the type (and therefore size and layout) of a transaction is already known before that transaction starts. This avoids that certain transmission errors can lead to false assumptions about the existence and position of fields in a transaction.
 |===
 
-See <<performance_comparison>> for a detailed performance comparison and <<error_handling>> for a detailed description how the robustness features can be used by a debugger.
+See <<performance_comparison.adoc#performance_comparison>> for a detailed performance comparison and <<error_handling.adoc#error_handling>> for a detailed description how the robustness features can be used by a debugger.
 
 == Option for compatibility with JTAG
 
@@ -91,7 +91,7 @@ This requires a free-running constant clock source inside the target system, as 
 .Possible RISC-V platform with RSDPxSP transport
 image::rsdpxsp_system.svg[]
 
-See <<rsdpxsp>> for more details on the RSDPxSP protocol.
+See <<rsdpxsp.adoc#rsdpxsp>> for more details on the RSDPxSP protocol.
 
 == Option for debugging over CAN physical layer
 
@@ -102,7 +102,7 @@ The RSDPxSP protocol can also be used to use the CAN physical layer, for example
 .Possible RISC-V platform with RSDPxCPL transport
 image::rsdpxcpl_system.svg[]
 
-See <<rsdpxcpl>> for more details on the RSDPxCPL protocol.
+See <<rsdpxcpl.adoc#rsdpxcpl>> for more details on the RSDPxCPL protocol.
 
 == RSDP protocol properties
 
@@ -127,7 +127,7 @@ See <<rsdpxcpl>> for more details on the RSDPxCPL protocol.
 
 *Flexibility* is provided by
 
-* Option to focus on performance (<<rsdp_fast_state,RSDP-FAST>> interface state) or robustness (<<rsdp_robust_state,RSDP-ROBUST>> interface state)
+* Option to focus on performance (<<interface_states.adoc#rsdp_fast_state,RSDP-FAST>> interface state) or robustness (<<interface_states.adoc#rsdp_robust_state,RSDP-ROBUST>> interface state)
 * Option to operate in JTAG mode for legacy debuggers or JTAG-only features like boundary scan
 * Option for single-pin debugging
 * Option for debugging via the CAN physical layer

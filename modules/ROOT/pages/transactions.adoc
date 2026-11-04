@@ -1,15 +1,15 @@
 = Transactions
 
 The basic unit of the protocol is the transaction, which in the error-free case consists of a request from the debugger followed by a response from the target.
-The main purpose of a transaction is to perform a read of one of the three JTAG-DTM registers (<<idcode_register,idcode>>, <<dtmcs_register,dtmcs>> or <<dmi_register,dmi>>) and/or a write of the same register.
+The main purpose of a transaction is to perform a read of one of the three JTAG-DTM registers (<<idcode_register,idcode>>, <<dtmcs_register,dtmcs>> or <<introduction.adoc#dmi_register,dmi>>) and/or a write of the same register.
 There also exists a <<nop_transaction,NOP>> transaction that does not perform any operation.
 
-Refer to the RISC-V Debug Specification for the semantics of the <<idcode_register,idcode>>, <<dtmcs_register,dtmcs>> and <<dmi_register,dmi>> registers.
+Refer to the RISC-V Debug Specification for the semantics of the <<idcode_register,idcode>>, <<dtmcs_register,dtmcs>> and <<introduction.adoc#dmi_register,dmi>> registers.
 
 [[transaction_format]]
 == Transaction format
 
-A transaction is transmitted as follows (refer to <<wire_format>>):
+A transaction is transmitted as follows (refer to <<introduction.adoc#wire_format>>):
 
 [source,plaintext]
 ----
@@ -44,7 +44,7 @@ Note that <<wr_payload_field,WR-PAYLOAD>> and <<rd_payload_field,RD-PAYLOAD>> le
 ----
 
 There is no variable gap between the request from the debugger and the response from the target.
-The target must respond immediately if a valid request was received (constant fields and CRC as expected, valid <<tt_field,TT>> value) and otherwise enter an error state as described in <<error_handling>>.
+The target must respond immediately if a valid request was received (constant fields and CRC as expected, valid <<tt_field,TT>> value) and otherwise enter an error state as described in <<error_handling.adoc#error_handling>>.
 After the response from the target, the debugger must drive one `/ 0b0 /` to ensure that there is no drive conflict while the target stops driving the RDAT line.
 It may drive any number of further `/ 0b0 /` idle cycles before the start of the next transaction request.
 
@@ -56,9 +56,9 @@ This is an overview of the different fields, with a detailed description in the 
 |===
 | field
 | length +
-  (<<rsdp_robust_state,RSDP-ROBUST>>)
+  (<<interface_states.adoc#rsdp_robust_state,RSDP-ROBUST>>)
 | length +
-  (<<rsdp_fast_state,RSDP-FAST>>)
+  (<<interface_states.adoc#rsdp_fast_state,RSDP-FAST>>)
 | purpose
 
 | <<start_field,START>>
@@ -69,7 +69,7 @@ This is an overview of the different fields, with a detailed description in the 
 | <<tt_field,TT>>
 | 4
 | 4
-| Indicate type of this (<<rsdp_fast_state,RSDP-FAST>>) or next (<<rsdp_robust_state,RSDP-ROBUST>>) transaction
+| Indicate type of this (<<interface_states.adoc#rsdp_fast_state,RSDP-FAST>>) or next (<<interface_states.adoc#rsdp_robust_state,RSDP-ROBUST>>) transaction
 
 | <<wr_payload_field,WR-PAYLOAD>>
 | variable
@@ -100,10 +100,10 @@ The <<start_field,START>> field marks the start of a half-transaction, either fr
 The response from a target starts with `/ 0b0 / START /` to ensure that the debugger receives a rising edge of the RDAT line driven by the target.
 Without the extra zero, the timing of the rising edge would be determined by the I/O pin's tristate control, which could be different from the drive value path.
 
-In <<rsdp_robust_state,RSDP-ROBUST>> state, this field is encoded as `/ 0b011 /`.
+In <<interface_states.adoc#rsdp_robust_state,RSDP-ROBUST>> state, this field is encoded as `/ 0b011 /`.
 Using multiple bits allows detection of a bit error inside this field.
 
-In <<rsdp_fast_state,RSDP-FAST>> state, this field is encoded as `/ 0b1 /`.
+In <<interface_states.adoc#rsdp_fast_state,RSDP-FAST>> state, this field is encoded as `/ 0b1 /`.
 
 [[tt_field]]
 === TT field
@@ -133,13 +133,13 @@ For use of the encodings marked as _reserved_, see <<extensions>>.
 
 NOTE: The encoding allows the target to decode whether the access is a DMI transaction from the least significant bit of `TT`.
 
-In <<rsdp_robust_state,RSDP-ROBUST>> state, the value of the <<tt_field,TT>> field specifies the type of the _following_ transaction.
+In <<interface_states.adoc#rsdp_robust_state,RSDP-ROBUST>> state, the value of the <<tt_field,TT>> field specifies the type of the _following_ transaction.
 This is required because the length of the <<wr_payload_field,WR-PAYLOAD>> and <<rd_payload_field,RD-PAYLOAD>> fields depends on the transaction type.
 If the transaction contained its own type information, that information would have to be used before the CRC can be checked.
 This would prevent the detection of some single-bit errors.
-After an <<enable_robust_sequence,ENABLE-ROBUST>> sequence, the following transaction is always a <<nop_transaction,NOP>> transaction.
+After an <<escape_sequences.adoc#enable_robust_sequence,ENABLE-ROBUST>> sequence, the following transaction is always a <<nop_transaction,NOP>> transaction.
 
-In <<rsdp_fast_state,RSDP-FAST>> state, the value of the <<tt_field,TT>> field specifies the type of the transaction it is contained in.
+In <<interface_states.adoc#rsdp_fast_state,RSDP-FAST>> state, the value of the <<tt_field,TT>> field specifies the type of the transaction it is contained in.
 
 [[wr_payload_field]]
 === WR-PAYLOAD field
@@ -150,10 +150,10 @@ Its presence, contents and length are described in <<transactions>>.
 [[crc_field]]
 === CRC field
 
-In <<rsdp_robust_state,RSDP-ROBUST>> state, the <<crc_field,CRC>> field is a 6-bit value computed over all data following the <<start_field,START>> field.
-Refer to <<crc>> for calculation of this value.
+In <<interface_states.adoc#rsdp_robust_state,RSDP-ROBUST>> state, the <<crc_field,CRC>> field is a 6-bit value computed over all data following the <<start_field,START>> field.
+Refer to <<crc_computation.adoc#crc>> for calculation of this value.
 
-In <<rsdp_fast_state,RSDP-FAST>> state, the <<crc_field,CRC>> field is empty (not transmitted).
+In <<interface_states.adoc#rsdp_fast_state,RSDP-FAST>> state, the <<crc_field,CRC>> field is empty (not transmitted).
 
 [[stat_field]]
 === STAT field
@@ -200,9 +200,9 @@ Its presence, contents and length are described in <<transactions>>.
 
 The following transaction types are defined.
 
-In <<rsdp_robust_state,RSDP-ROBUST>> state, the transaction type is the <<tt_field,TT>> field value sent in the _previous_ transaction.
+In <<interface_states.adoc#rsdp_robust_state,RSDP-ROBUST>> state, the transaction type is the <<tt_field,TT>> field value sent in the _previous_ transaction.
 
-In <<rsdp_fast_state,RSDP-FAST>> state, the transaction type is the <<tt_field,TT>> field value sent in the _current_ transaction.
+In <<interface_states.adoc#rsdp_fast_state,RSDP-FAST>> state, the transaction type is the <<tt_field,TT>> field value sent in the _current_ transaction.
 
 An RSDP-DTM or RSDPJ-DTM must implement all of these transactions in every RSDP state it supports.
 
@@ -237,47 +237,47 @@ An RSDP-DTM or RSDPJ-DTM must implement all of these transactions in every RSDP 
 
 | <<dmi_transactions,DMI_NOP>>
 | --
-| Read <<dmi_register,dmi>> register. +
-  Write <<dmi_register,dmi>> register (<<dmi_register,dmi.op>> == nop).
-| <<dmi_register,dmi.op>> (read)
-| <<dmi_register,dmi.data>> or --
+| Read <<introduction.adoc#dmi_register,dmi>> register. +
+  Write <<introduction.adoc#dmi_register,dmi>> register (<<introduction.adoc#dmi_register,dmi.op>> == nop).
+| <<introduction.adoc#dmi_register,dmi.op>> (read)
+| <<introduction.adoc#dmi_register,dmi.data>> or --
 
 | <<dmi_transactions,DMI_WR>>
-| <<dmi_register,dmi.addr>> +
-<<dmi_register,dmi.data>>
-| Read <<dmi_register,dmi>> register +
-Write <<dmi_register,dmi>> register (<<dmi_register,dmi.op>> == write).
-| <<dmi_register,dmi.op>> (read)
-| <<dmi_register,dmi.data>> or --
+| <<introduction.adoc#dmi_register,dmi.addr>> +
+<<introduction.adoc#dmi_register,dmi.data>>
+| Read <<introduction.adoc#dmi_register,dmi>> register +
+Write <<introduction.adoc#dmi_register,dmi>> register (<<introduction.adoc#dmi_register,dmi.op>> == write).
+| <<introduction.adoc#dmi_register,dmi.op>> (read)
+| <<introduction.adoc#dmi_register,dmi.data>> or --
 
 | <<dmi_transactions,DMI_RD>>
-| <<dmi_register,dmi.addr>>
-| Read <<dmi_register,dmi>> register. +
-  Write <<dmi_register,dmi>> register (<<dmi_register,dmi.op>> == read).
-| <<dmi_register,dmi.op>> (read)
-| <<dmi_register,dmi.data>> or --
+| <<introduction.adoc#dmi_register,dmi.addr>>
+| Read <<introduction.adoc#dmi_register,dmi>> register. +
+  Write <<introduction.adoc#dmi_register,dmi>> register (<<introduction.adoc#dmi_register,dmi.op>> == read).
+| <<introduction.adoc#dmi_register,dmi.op>> (read)
+| <<introduction.adoc#dmi_register,dmi.data>> or --
 
 | <<dmi_transactions,DMI_WR_SA>>
-| <<dmi_register,dmi.addr[1:0]>> +
-  <<dmi_register,dmi.data>>
-| Read <<dmi_register,dmi>> register. +
-  Write <<dmi_register,dmi>> register (<<dmi_register,dmi.op>> == write).
-| <<dmi_register,dmi.op>> (read)
-| <<dmi_register,dmi.data>> or --
+| <<introduction.adoc#dmi_register,dmi.addr[1:0]>> +
+  <<introduction.adoc#dmi_register,dmi.data>>
+| Read <<introduction.adoc#dmi_register,dmi>> register. +
+  Write <<introduction.adoc#dmi_register,dmi>> register (<<introduction.adoc#dmi_register,dmi.op>> == write).
+| <<introduction.adoc#dmi_register,dmi.op>> (read)
+| <<introduction.adoc#dmi_register,dmi.data>> or --
 
 | <<dmi_transactions,DMI_RD_SA>>
-| <<dmi_register,dmi.addr[1:0]>>
-| Read <<dmi_register,dmi>> register. +
-  Write <<dmi_register,dmi>> register (<<dmi_register,dmi.op>> == read).
-| <<dmi_register,dmi.op>> (read)
-| <<dmi_register,dmi.data>> or --
+| <<introduction.adoc#dmi_register,dmi.addr[1:0]>>
+| Read <<introduction.adoc#dmi_register,dmi>> register. +
+  Write <<introduction.adoc#dmi_register,dmi>> register (<<introduction.adoc#dmi_register,dmi.op>> == read).
+| <<introduction.adoc#dmi_register,dmi.op>> (read)
+| <<introduction.adoc#dmi_register,dmi.data>> or --
 |===
 
 [[nop_transaction]]
 === NOP transaction
 
 The <<nop_transaction,NOP>> transaction performs no operation and transfers no payload data.
-It is used in <<rsdp_robust_state,RSDP-ROBUST>> state as the initial transaction after a switching sequence.
+It is used in <<interface_states.adoc#rsdp_robust_state,RSDP-ROBUST>> state as the initial transaction after a switching sequence.
 The debugger can send this transaction type in the <<tt_field,TT>> field if the type of the next transaction is not known yet.
 The actual <<nop_transaction,NOP>> transaction is then executed in the following step, during which the TT field is transmitted for the subsequent operation.
 
@@ -300,29 +300,29 @@ The <<rd_payload_field,RD-PAYLOAD>> is empty.
 [[dmi_transactions]]
 === DMI transactions
 
-The <<dmi_transactions,DMI_NOP>>, <<dmi_transactions,DMI_WR>>, <<dmi_transactions,DMI_RD>>, <<dmi_transactions,DMI_WR_SA>> and <<dmi_transactions,DMI_RD_SA>> transactions provide access to the <<dmi_register,dmi>> register as specified in the _RISC-V Debug specification_, section&nbsp;6.1.5 cite:[riscv-debug-spec-1.0].
+The <<dmi_transactions,DMI_NOP>>, <<dmi_transactions,DMI_WR>>, <<dmi_transactions,DMI_RD>>, <<dmi_transactions,DMI_WR_SA>> and <<dmi_transactions,DMI_RD_SA>> transactions provide access to the <<introduction.adoc#dmi_register,dmi>> register as specified in the _RISC-V Debug specification_, section&nbsp;6.1.5 cite:[riscv-debug-spec-1.0].
 As this is the type of access that a debugger will spend most time performing, there are five transaction types to avoid transferring data that is not needed.
-Each DMI transaction represents a read operation of the <<dmi_register,dmi>> register immediately followed by a write operation to the <<dmi_register,dmi>> register.
+Each DMI transaction represents a read operation of the <<introduction.adoc#dmi_register,dmi>> register immediately followed by a write operation to the <<introduction.adoc#dmi_register,dmi>> register.
 The written value is derived from the transaction type and payload data, and the read value determines the <<stat_field,STAT>> and possible <<rd_payload_field,RD-PAYLOAD>> fields.
 
-The <<dmi_register,dmi.op>> field's write value is encoded in the RSDP transaction type, and the <<dmi_register,dmi.op>> field's read value is transported in the <<stat_field,STAT>> field of each response.
+The <<introduction.adoc#dmi_register,dmi.op>> field's write value is encoded in the RSDP transaction type, and the <<introduction.adoc#dmi_register,dmi.op>> field's read value is transported in the <<stat_field,STAT>> field of each response.
 
-The <<dmi_register,dmi.addr>> field's write value is not sent for the <<dmi_transactions,DMI_NOP>> transaction, where its value would be ignored.
+The <<introduction.adoc#dmi_register,dmi.addr>> field's write value is not sent for the <<dmi_transactions,DMI_NOP>> transaction, where its value would be ignored.
 For the other DMI transactions, it is sent as part of the <<wr_payload_field,WR-PAYLOAD>> field.
 It is sent in full in the <<dmi_transactions,DMI_WR>> and <<dmi_transactions,DMI_RD>> transactions, requiring the debugger to query the <<dtmcs_register,dtmcs.abits>> value before issuing these transactions.
-The <<dmi_transactions,DMI_WR_SA>> and <<dmi_transactions,DMI_RD_SA>> only include a short address of two bits, retaining the remaining bits of <<dmi_register,dmi.addr>> from the last <<dmi_transactions,DMI_WR>> or <<dmi_transactions,DMI_RD>> transaction.
+The <<dmi_transactions,DMI_WR_SA>> and <<dmi_transactions,DMI_RD_SA>> only include a short address of two bits, retaining the remaining bits of <<introduction.adoc#dmi_register,dmi.addr>> from the last <<dmi_transactions,DMI_WR>> or <<dmi_transactions,DMI_RD>> transaction.
 This allows efficient access to wide registers of a single DM (e.g. data0 to data3 or sbdata0 to sbdata3) or repeated accesses to the same registers.
 Read and write addresses are not remembered separately, so a <<dmi_transactions,DMI_WR_SA>> transaction can use the upper address bits from either a <<dmi_transactions,DMI_WR>> or <<dmi_transactions,DMI_RD>> transaction, as can a <<dmi_transactions,DMI_RD_SA>> transaction.
 
-The <<dmi_register,dmi.addr>> field's read value is never sent back to the debugger as it would just be a copy of the written value.
+The <<introduction.adoc#dmi_register,dmi.addr>> field's read value is never sent back to the debugger as it would just be a copy of the written value.
 
-The <<dmi_register,dmi.data>> field's write value is only sent for the <<dmi_transactions,DMI_WR>> and <<dmi_transactions,DMI_WR_SA>> transactions.
+The <<introduction.adoc#dmi_register,dmi.data>> field's write value is only sent for the <<dmi_transactions,DMI_WR>> and <<dmi_transactions,DMI_WR_SA>> transactions.
 It is sent in the <<wr_payload_field,WR-PAYLOAD>> field, after the address.
 
 The <<rd_payload_field,RD-PAYLOAD>> value of a DMI transaction depends on the most recently executed DMI transaction.
-If that transaction was a <<dmi_transactions,DMI_RD>> or <<dmi_transactions,DMI_RD_SA>>, then the <<dmi_register,dmi.data>> value (i.e. the read data from the DMI) is sent.
+If that transaction was a <<dmi_transactions,DMI_RD>> or <<dmi_transactions,DMI_RD_SA>>, then the <<introduction.adoc#dmi_register,dmi.data>> value (i.e. the read data from the DMI) is sent.
 Otherwise, the <<rd_payload_field,RD-PAYLOAD>> is empty.
-The first DMI transaction after an <<enable_robust_sequence,ENABLE-ROBUST>> or <<enable_fast_sequence,ENABLE-FAST>> sequence also has an empty <<rd_payload_field,RD-PAYLOAD>>.
+The first DMI transaction after an <<escape_sequences.adoc#enable_robust_sequence,ENABLE-ROBUST>> or <<escape_sequences.adoc#enable_fast_sequence,ENABLE-FAST>> sequence also has an empty <<rd_payload_field,RD-PAYLOAD>>.
 
 [[intbus]]
 == DTM-internal bus
@@ -381,34 +381,34 @@ The <<dtmcs_register,dtmcs>> register is described in the _RISC-V Debug specific
 The <<dtmcs_register,dtmcs.idle>> field is meaningless in RSDP interface states, as even the highest encodable number of recommended cycles is already enforced by the protocol. Therefore in RSDP interface states, the field can be ignored by the debugger. In an RSDP-DTM, the field's read value is undefined. In an RSDPJ-DTM, the field must have the read value as specified by the _RISC-V Debug specification_, section&nbsp;6.1.4 cite:[riscv-debug-spec-1.0].
 
 The <<dtmcs_register,dtmcs.dtmhardreset>> field only resets the state of the DMI bus manager, not the communication state with the debugger.
-In particular, it does not interfere with the target's response to the <<intbus_wr_transaction,INTBUS_WR>> transaction, or, in <<rsdp_robust_state,RSDP-ROBUST>> state, the sequence counter and type of the following transaction.
+In particular, it does not interfere with the target's response to the <<intbus_wr_transaction,INTBUS_WR>> transaction, or, in <<interface_states.adoc#rsdp_robust_state,RSDP-ROBUST>> state, the sequence counter and type of the following transaction.
 
 An RSDP-DTM or RSDPJ-DTM compliant to this version of this specification must set <<dtmcs_register,dtmcs.version>> to the value 1.
 
 [[spdiv_register]]
 === Single-Pin DIVider register (spdiv, at 0x02)
 
-The read-only <<spdiv_register,spdiv>> register reads back the divider of an RSDPxSP or RSDPxCPL converter, see <<rsdpxsp_divider>>.
+The read-only <<spdiv_register,spdiv>> register reads back the divider of an RSDPxSP or RSDPxCPL converter, see <<rsdpxsp.adoc#rsdpxsp_divider>>.
 
 When the RSDP-DTM is not accessed via one of these converters, the value 0 must be read back.
 
 == DMI bus accesses in RSDP-FAST state
 
-<<rsdp_fast_state,RSDP-FAST>> performs DMI bus accesses using the semantics of the <<dmi_register,dmi>> register of the JTAG-DTM.
+<<interface_states.adoc#rsdp_fast_state,RSDP-FAST>> performs DMI bus accesses using the semantics of the <<introduction.adoc#dmi_register,dmi>> register of the JTAG-DTM.
 
-This means that a typical single DMI write access requires two <<rsdp_fast_state,RSDP-FAST>> transactions:
+This means that a typical single DMI write access requires two <<interface_states.adoc#rsdp_fast_state,RSDP-FAST>> transactions:
 
 . Send <<tt_field,TT>> == <<dmi_transactions,DMI_WR>>. Send address and write data.
 . Send <<tt_field,TT>> == <<dmi_transactions,DMI_NOP>>. Receive <<stat_field,STAT>>.
 
-NOTE: See <<example_dmi_write>> for a full example of a single DMI bus write in <<rsdp_fast_state,RSDP-FAST>> state.
+NOTE: See <<example_transaction_sequences.adoc#example_dmi_write>> for a full example of a single DMI bus write in <<interface_states.adoc#rsdp_fast_state,RSDP-FAST>> state.
 
 A single DMI read access also requires two transactions:
 
 . Send <<tt_field,TT>> == <<dmi_transactions,DMI_RD>>. Send address.
 . Send <<tt_field,TT>> == <<dmi_transactions,DMI_NOP>>. Receive <<stat_field,STAT>> and read data.
 
-NOTE: See <<example_dmi_read>> for a full example of a single DMI bus read in <<rsdp_fast_state,RSDP-FAST>> state.
+NOTE: See <<example_transaction_sequences.adoc#example_dmi_read>> for a full example of a single DMI bus read in <<interface_states.adoc#rsdp_fast_state,RSDP-FAST>> state.
 
 If multiple DMI bus accesses are scheduled, these extra transactions can be consolidated.
 For example, to perform three read accesses on the DMI bus:
@@ -418,12 +418,12 @@ For example, to perform three read accesses on the DMI bus:
 . Send <<tt_field,TT>> == <<dmi_transactions,DMI_RD>>. Send addr2. Receive <<stat_field,STAT>> and rdata1.
 . Send <<tt_field,TT>> == <<dmi_transactions,DMI_NOP>>. Receive <<stat_field,STAT>> and rdata2.
 
-NOTE: See <<example_dmi_pipelining>> for a full example of multiple DMI operations in <<rsdp_fast_state,RSDP-FAST>> state.
+NOTE: See <<example_transaction_sequences.adoc#example_dmi_pipelining>> for a full example of multiple DMI operations in <<interface_states.adoc#rsdp_fast_state,RSDP-FAST>> state.
 
 [[pipelining]]
 == Pipelining in RSDP-ROBUST state
 
-The <<rsdp_robust_state,RSDP-ROBUST>> state uses the <<tt_field,TT>> field of the _previous_ transaction to determine the type of the _current_ transaction.
+The <<interface_states.adoc#rsdp_robust_state,RSDP-ROBUST>> state uses the <<tt_field,TT>> field of the _previous_ transaction to determine the type of the _current_ transaction.
 This is essential to guarantee detection of single-bit errors because it ensures that <<tt_field,TT>> is protected by a CRC before it is decoded and used to deduce the length of the <<wr_payload_field,WR-PAYLOAD>> and <<rd_payload_field,RD-PAYLOAD>> fields.
 
 This delayed use of the <<tt_field,TT>> field necessitates that the debugger sends <<tt_field,TT>> = <<nop_transaction,NOP>> in a transaction when the next transaction is not known yet.
@@ -434,13 +434,13 @@ For example, to read a register on the DMI-internal bus:
 . <<nop_transaction,NOP>> transaction. Send <<tt_field,TT>> == <<intbus_rd_transaction,INTBUS_RD>> (for transaction 2).
 . <<intbus_rd_transaction,INTBUS_RD>> transaction. Send <<tt_field,TT>> == <<nop_transaction,NOP>> (for next transaction) and address. Receive read register value.
 
-As a result of the combination of pipelining and the semantics of the <<dmi_register,dmi>> registers, a typical single DMI bus write access requires three <<rsdp_robust_state,RSDP-ROBUST>> transactions:
+As a result of the combination of pipelining and the semantics of the <<introduction.adoc#dmi_register,dmi>> registers, a typical single DMI bus write access requires three <<interface_states.adoc#rsdp_robust_state,RSDP-ROBUST>> transactions:
 
 . <<nop_transaction,NOP>> transaction. Send <<tt_field,TT>> == <<dmi_transactions,DMI_WR>> (for transaction 2).
 . <<dmi_transactions,DMI_WR>> transaction. Send <<tt_field,TT>> == <<dmi_transactions,DMI_NOP>> (for transaction 3), address and write data.
 . <<dmi_transactions,DMI_NOP>> transaction. Send <<tt_field,TT>> == <<nop_transaction,NOP>> (for next transaction). Receive <<stat_field,STAT>>.
 
-NOTE: See <<example_dmi_write>> for a full example of a single DMI bus write in <<rsdp_robust_state,RSDP-ROBUST>> state.
+NOTE: See <<example_transaction_sequences.adoc#example_dmi_write>> for a full example of a single DMI bus write in <<interface_states.adoc#rsdp_robust_state,RSDP-ROBUST>> state.
 
 A single DMI read access also requires three transactions:
 
@@ -448,7 +448,7 @@ A single DMI read access also requires three transactions:
 . <<dmi_transactions,DMI_RD>> transaction. Send <<tt_field,TT>> == <<dmi_transactions,DMI_NOP>> (for transaction 3), address.
 . <<dmi_transactions,DMI_NOP>> transaction. Send <<tt_field,TT>> == <<nop_transaction,NOP>> (for next transaction). Receive <<stat_field,STAT>> and read data.
 
-NOTE: See <<example_dmi_read>> for a full example of a single DMI bus read in <<rsdp_robust_state,RSDP-ROBUST>> state.
+NOTE: See <<example_transaction_sequences.adoc#example_dmi_read>> for a full example of a single DMI bus read in <<interface_states.adoc#rsdp_robust_state,RSDP-ROBUST>> state.
 
 If multiple DMI bus accesses are scheduled, these extra transactions can be consolidated.
 For example, to perform three read accesses on the DMI bus:
@@ -460,9 +460,9 @@ For example, to perform three read accesses on the DMI bus:
 . <<dmi_transactions,DMI_NOP>> transaction. Send <<tt_field,TT>> == <<nop_transaction,NOP>> for next transaction. Receive <<stat_field,STAT>> and rdata2.
 
 The same principle applies for a list of write operations or even mixed accesses.
-The sticky behavior of the <<dmi_register,dmi.op>> field ensures that after a failed access, no further accesses are executed.
+The sticky behavior of the <<introduction.adoc#dmi_register,dmi.op>> field ensures that after a failed access, no further accesses are executed.
 
-NOTE: See <<example_dmi_pipelining>> for a full example of multiple DMI operations in <<rsdp_robust_state,RSDP-ROBUST>> state.
+NOTE: See <<example_transaction_sequences.adoc#example_dmi_pipelining>> for a full example of multiple DMI operations in <<interface_states.adoc#rsdp_robust_state,RSDP-ROBUST>> state.
 
 [[extensions]]
 == Use of TT encodings and DTM-internal bus registers by extensions
@@ -476,6 +476,6 @@ If more registers are needed, an indirect addressing scheme should be used.
 Extensions may use the <<tt_field,TT>> encodings marked as _reserved_ in <<table_tt_encoding>> under the following conditions:
 
  - Each extension must provide a way to enable its use of any _reserved_ <<tt_field,TT>> encoding through a register on the DTM-internal bus.
- - Following an <<enable_robust_sequence,ENABLE-ROBUST>> or <<enable_fast_sequence,ENABLE-FAST>> sequence, all _reserved_ <<tt_field,TT>> encodings are treated as invalid transaction requests.
+ - Following an <<escape_sequences.adoc#enable_robust_sequence,ENABLE-ROBUST>> or <<escape_sequences.adoc#enable_fast_sequence,ENABLE-FAST>> sequence, all _reserved_ <<tt_field,TT>> encodings are treated as invalid transaction requests.
    A reserved encoding remains invalid until an extension using the encoding is enabled.
  - The debugger must take care not to simultaneously enable conflicting uses of a <<tt_field,TT>> encoding by different extensions.

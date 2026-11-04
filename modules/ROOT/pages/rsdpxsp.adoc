@@ -16,7 +16,7 @@ A RDAT value of `'0'` is encoded with a short, a value of `'1'` with a long dist
 In the target, RSDPxSP may be implemented as an _RSDPxSP converter_ module that uses the SP pin to generate the RCLK and RDAT inputs to the RSDP-DTM and receives the RDAT output enable and value outputs from the RSDP-DTM.
 
 RSDPxSP offers a calibration and activation sequence that allows both sides to establish a common time base as well as preventing random signal changes from activating the interface.
-Furthermore, an RSDP enable sequence is required to move the RSDP-DTM out of <<disabled_state,DISABLED>> state, adding further robustness.
+Furthermore, an RSDP enable sequence is required to move the RSDP-DTM out of <<interface_states.adoc#disabled_state,DISABLED>> state, adding further robustness.
 
 An example RSDP transaction with request from the debugger and response from the target looks as follows:
 
@@ -125,7 +125,7 @@ NOTE: For example, if 16 `'0'` bits are to be used to calibrate the <<rsdpxsp_di
 If the resulting <<rsdpxsp_divider,divider>> value is outside of the converter's allowed range or any of the following `'0'` bits are not received correctly, the converter enters <<rsdpxsp_state_failed,FAILED>> state.
 
 When calibration is complete, the converter enters <<rsdpxsp_state_receive,RECEIVE>> state.
-The debugger may then either allow the converter to enter <<rsdpxsp_state_idle,IDLE>> state or it may directly proceed with one of the switching sequences described in <<switching_sequence>>.
+The debugger may then either allow the converter to enter <<rsdpxsp_state_idle,IDLE>> state or it may directly proceed with one of the switching sequences described in <<escape_sequences.adoc#switching_sequence>>.
 
 [[rsdpxsp_state_failed]]
 === FAILED state
@@ -190,13 +190,13 @@ To attach to a target from any state, a debugger can use the following sequence:
 
 . Send a long high pulse on the SP line, for example 10&nbsp;ms, to ensure the converter is in <<rsdpxsp_state_inactive,INACTIVE>> state.
 . Perform calibration with a time quantum of 50&nbsp;µs, i.e. send an initial rising edge followed by at least 1100 further edges that are 100&nbsp;µs apart.
-. Send an <<enable_robust_sequence,ENABLE-ROBUST>> or <<enable_robust_sequence,ENABLE-FAST>> sequence and check the target's response.
+. Send an <<escape_sequences.adoc#enable_robust_sequence,ENABLE-ROBUST>> or <<escape_sequences.adoc#enable_robust_sequence,ENABLE-FAST>> sequence and check the target's response.
 
 The debugger can then continue to communicate at this initial speed or it can attempt to switch to a higher frequency, as described in <<rsdpxsp_debugger_highspeed>>.
 
 === Sending a transaction
 
-When sending the request part of a transaction, the debugger sends an initial SP edge, followed by the bits described in <<transaction_format>>.
+When sending the request part of a transaction, the debugger sends an initial SP edge, followed by the bits described in <<transactions.adoc#transaction_format>>.
 It can omit the final `/ 0b0 /` field of the request as well as any other trailing `'0'` bits.
 If the SP line is high after the final bit, it appends another `'0'` bit so the SP line ends up low.
 It then tristates the line after another 2 time quanta.
@@ -214,7 +214,7 @@ The maximum frequency for reliable communication depends on the electrical prope
 The former can in most cases only be determined through experimentation or configuration.
 For the latter, there exists a robust way to enable robust operation even at very low <<rsdpxsp_divider,divider>> values:
 
-. Read out the <<spdiv_register,spdiv>> register via an <<intbus_rd_transaction,INTBUS_RD>> transaction.
+. Read out the <<transactions.adoc#spdiv_register,spdiv>> register via an <<transactions.adoc#intbus_rd_transaction,INTBUS_RD>> transaction.
 . Measure the length of a response from the target to compute the clock frequency used by the converter.
 . Choose a new divider close to the desired effective frequency and perform a new calibration sequence.
 
@@ -224,5 +224,5 @@ The debugger can continuously measure responses from the target to compensate fo
 == Platforms with both RSDPxSP and regular RSDP interface
 
 When a target supports both RSDPxSP and the regular two-pin RSDP interface, escape sequences switch between the two modes.
-Both physical interfaces separately wait for an <<enable_robust_sequence,ENABLE-ROBUST>> or <<enable_robust_sequence,ENABLE-FAST>> sequence.
+Both physical interfaces separately wait for an <<escape_sequences.adoc#enable_robust_sequence,ENABLE-ROBUST>> or <<escape_sequences.adoc#enable_robust_sequence,ENABLE-FAST>> sequence.
 When either interface receives such a sequence, the RSDP-DTM is immediately switched to that interface and generates the response.
