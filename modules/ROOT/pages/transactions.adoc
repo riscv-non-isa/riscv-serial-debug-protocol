@@ -224,14 +224,14 @@ An RSDP-DTM or RSDPJ-DTM must implement all of these transactions in every RSDP 
 
 | <<intbus_rd_transaction,INTBUS_RD>>
 | addr
-| Read DMI-internal register.
+| Read DTM-internal register.
 | <<table_stat_encoding,SUCCESS>>
 | rdata
 
 | <<intbus_wr_transaction,INTBUS_WR>>
 | addr +
   wdata
-| Write DMI-internal register.
+| Write DTM-internal register.
 | <<table_stat_encoding,SUCCESS>>
 | --
 
@@ -334,7 +334,7 @@ Command, address and data for each access are transported in a single transactio
 The following registers are defined:
 
 [[table_intbus]]
-.Registers on the DMI-internal bus
+.Registers on the DTM-internal bus
 [%header,cols="1,4,1"]
 |===
 | Address
@@ -429,7 +429,7 @@ This is essential to guarantee detection of single-bit errors because it ensures
 This delayed use of the <<tt_field,TT>> field necessitates that the debugger sends <<tt_field,TT>> = <<nop_transaction,NOP>> in a transaction when the next transaction is not known yet.
 Afterwards, when it needs to execute further transactions, it will execute the <<nop_transaction,NOP>> transaction it previously requested _only_ to transport <<tt_field,TT>> for the next transaction.
 
-For example, to read a register on the DMI-internal bus:
+For example, to read a register on the DTM-internal bus:
 
 . <<nop_transaction,NOP>> transaction. Send <<tt_field,TT>> == <<intbus_rd_transaction,INTBUS_RD>> (for transaction 2).
 . <<intbus_rd_transaction,INTBUS_RD>> transaction. Send <<tt_field,TT>> == <<nop_transaction,NOP>> (for next transaction) and address. Receive read register value.
