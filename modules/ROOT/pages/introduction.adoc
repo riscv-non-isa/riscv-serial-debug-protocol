@@ -28,7 +28,7 @@ The agent that connects to the target and accesses its state.
 RSDP::
 The RISC-V Serial Debug Protocol and its variants specified in this document.
 RSDP state::
-General term for <<rsdp_robust_state,RSDP-ROBUST>> state and <<rsdp_fast_state,RSDP-FAST>> state.
+General term for <<interface_states.adoc#rsdp_robust_state,RSDP-ROBUST>> state and <<interface_states.adoc#rsdp_fast_state,RSDP-FAST>> state.
 RSDP-DTM::
 A Debug Transport Module that implements this specification and does not include an alternate JTAG interface state.
 RSDPJ-DTM::
@@ -36,7 +36,7 @@ A Debug Transport Module that implements this specification and can alternativel
 [[dmi_register]]
 dmi::
 The dmi register as described in _RISC-V Debug Specification_, section&nbsp;6.1.5 cite:[riscv-debug-spec-1.0].
-Additional clarifications about fields in this register can be found in <<dmi_transactions>>.
+Additional clarifications about fields in this register can be found in <<transactions.adoc#dmi_transactions>>.
 [[zero_hold]]
 zero hold-time requirement::
 A timing specification indicating that the receiver should latch data at or before the corresponding clock edge and the sender should launch data after the clock edge.

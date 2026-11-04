@@ -1,35 +1,35 @@
 [[error_handling]]
 = Error handling
 
-Only <<rsdp_robust_state,RSDP-ROBUST>> can reliably detect and recover from all single bit errors.
+Only <<interface_states.adoc#rsdp_robust_state,RSDP-ROBUST>> can reliably detect and recover from all single bit errors.
 This detection happens at the protocol level: No data containing bit errors is passed on to the DMI bus manager registers, and read data can be retransmitted without needing to repeat a DMI bus access.
 
-Both states, <<rsdp_robust_state,RSDP-ROBUST>> and <<rsdp_fast_state,RSDP-FAST>>, require that the target checks for unknown <<tt_field,TT>> field encodings.
+Both states, <<interface_states.adoc#rsdp_robust_state,RSDP-ROBUST>> and <<interface_states.adoc#rsdp_fast_state,RSDP-FAST>>, require that the target checks for unknown <<transactions.adoc#tt_field,TT>> field encodings.
 This ensures that if a future version of the protocol adds new transaction types, a debugger can safely probe whether a target supports them.
 
 == Transmission error handling in the target
 
 The target detects the following types of errors when receiving requests from the debugger:
 
-* Start errors where the extra bits of the <<start_field,START>> field are not as expected (only in <<rsdp_robust_state,RSDP-ROBUST>>).
+* Start errors where the extra bits of the <<transactions.adoc#start_field,START>> field are not as expected (only in <<interface_states.adoc#rsdp_robust_state,RSDP-ROBUST>>).
 * Format errors where the `/ 0b0 /` field is not as expected.
-* CRC errors where the <<crc_field,CRC>> field is not as expected (only in <<rsdp_robust_state,RSDP-ROBUST>>).
-* Type errors where the <<tt_field,TT>> field is not one of the valid encodings.
+* CRC errors where the <<transactions.adoc#crc_field,CRC>> field is not as expected (only in <<interface_states.adoc#rsdp_robust_state,RSDP-ROBUST>>).
+* Type errors where the <<transactions.adoc#tt_field,TT>> field is not one of the valid encodings.
 
 In response to any of these errors, the target must enter an error state where it does not transmit a response and does not interpret any more transaction requests.
-In <<rsdp_fast_state,RSDP-FAST>> state, this error is functionally equivalent to the <<disabled_state,DISABLED>> state.
-In <<rsdp_robust_state,RSDP-ROBUST>> state, a <<retransmit_sequence,RETRANSMIT>> sequence can be used to recover from the error.
+In <<interface_states.adoc#rsdp_fast_state,RSDP-FAST>> state, this error is functionally equivalent to the <<interface_states.adoc#disabled_state,DISABLED>> state.
+In <<interface_states.adoc#rsdp_robust_state,RSDP-ROBUST>> state, a <<escape_sequences.adoc#retransmit_sequence,RETRANSMIT>> sequence can be used to recover from the error.
 
 == Transmission error handling in the debugger
 
 The debugger detects the following types of errors when receiving responses from the target:
 
-* Format errors where the fixed bits of <<start_field,START>> or `/ 0b0 /` fields are not as expected.
-* CRC errors where the <<crc_field,CRC>> field is not as expected (only in <<rsdp_robust_state,RSDP-ROBUST>>).
+* Format errors where the fixed bits of <<transactions.adoc#start_field,START>> or `/ 0b0 /` fields are not as expected.
+* CRC errors where the <<transactions.adoc#crc_field,CRC>> field is not as expected (only in <<interface_states.adoc#rsdp_robust_state,RSDP-ROBUST>>).
 
 === Error handling in RSDP-FAST state
 
-In <<rsdp_fast_state,RSDP-FAST>> state, the debugger should treat any error as fatal and abort communication with the target.
+In <<interface_states.adoc#rsdp_fast_state,RSDP-FAST>> state, the debugger should treat any error as fatal and abort communication with the target.
 As it cannot be determined which transactions have been completed by the target, in the general case it must be assumed that the target is in an unknown state.
 
 === Error handling in RSDP-ROBUST state
@@ -43,43 +43,43 @@ NOTE: It is not possible to answer the first question by analyzing the target's 
       If the target did not receive the request without errors, the RDAT line will be tristated for an extended period of time.
       In a noisy environment, noise is expected to be visible on the RDAT line which would look like a response with errors sent by the target.
 
-By executing the <<retransmit_sequence,RETRANSMIT>> sequence, the debugger gets both pieces of information.
-The debugger must maintain a count of the number of transactions since the last <<enable_robust_sequence,ENABLE-ROBUST>> sequence.
+By executing the <<escape_sequences.adoc#retransmit_sequence,RETRANSMIT>> sequence, the debugger gets both pieces of information.
+The debugger must maintain a count of the number of transactions since the last <<escape_sequences.adoc#enable_robust_sequence,ENABLE-ROBUST>> sequence.
 
-* If the value from the <<seq_seq_field,SEQ>> field matches the debugger's transaction counter, the target received the last transaction request from the debugger without errors.
+* If the value from the <<escape_sequences.adoc#seq_seq_field,SEQ>> field matches the debugger's transaction counter, the target received the last transaction request from the debugger without errors.
   Therefore, the target executed the transaction, but there was a transmission error in the response from the target.
-  The debugger will use the <<stat_field,STAT>> and <<rd_payload_field,RD-PAYLOAD>> fields of the retransmitted response in place of the response it did not receive without errors.
-* If the value from the <<seq_seq_field,SEQ>> field does _not_ match the debugger's transaction counter, there was a transmission error in the final transaction request from the debugger.
-  Therefore, the target did _not_ execute the transaction request, and the <<stat_field,STAT>> and <<rd_payload_field,RD-PAYLOAD>> of the retransmitted response correspond to a previous transaction that the debugger already received.
+  The debugger will use the <<transactions.adoc#stat_field,STAT>> and <<transactions.adoc#rd_payload_field,RD-PAYLOAD>> fields of the retransmitted response in place of the response it did not receive without errors.
+* If the value from the <<escape_sequences.adoc#seq_seq_field,SEQ>> field does _not_ match the debugger's transaction counter, there was a transmission error in the final transaction request from the debugger.
+  Therefore, the target did _not_ execute the transaction request, and the <<transactions.adoc#stat_field,STAT>> and <<transactions.adoc#rd_payload_field,RD-PAYLOAD>> of the retransmitted response correspond to a previous transaction that the debugger already received.
   The debugger will ignore the retransmitted response and retry its last transaction.
 
-NOTE: Since the <<retransmit_sequence,RETRANSMIT>> resets neither the target's sequence counter nor the buffer for data to retransmit, the debugger can retry the sequence if it fails due to more bit errors.
+NOTE: Since the <<escape_sequences.adoc#retransmit_sequence,RETRANSMIT>> resets neither the target's sequence counter nor the buffer for data to retransmit, the debugger can retry the sequence if it fails due to more bit errors.
 
 == Handling of sticky DMI errors
 
-If a DMI transaction's <<stat_field,STAT>> field is not <<table_stat_encoding,SUCCESS>>, it means that a previous DMI bus access has failed.
+If a DMI transaction's <<transactions.adoc#stat_field,STAT>> field is not <<transactions.adoc#table_stat_encoding,SUCCESS>>, it means that a previous DMI bus access has failed.
 Due to the sticky error handling, a debugger may send multiple DMI transactions as a batch before checking if they were successful.
-The first transaction whose <<stat_field,STAT>> field is not <<table_stat_encoding,SUCCESS>> and all following transactions will be ignored by the target.
+The first transaction whose <<transactions.adoc#stat_field,STAT>> field is not <<transactions.adoc#table_stat_encoding,SUCCESS>> and all following transactions will be ignored by the target.
 
-A debugger will typically respond to a <<table_stat_encoding,FAILED>> access using a <<dtmcs_transactions,DTMCS_RD>> transaction to inspect the <<dtmcs_register,dtmcs.errinfo>> field, followed by a <<dtmcs_transactions,DTMCS_WR>> transaction that sets <<dtmcs_register,dtmcs.dmireset>>.
+A debugger will typically respond to a <<transactions.adoc#table_stat_encoding,FAILED>> access using a <<transactions.adoc#table_transactions,DTMCS_RD>> transaction to inspect the <<transactions.adoc#dtmcs_register,dtmcs.errinfo>> field, followed by a <<transactions.adoc#table_transactions,DTMCS_WR>> transaction that sets <<transactions.adoc#dtmcs_register,dtmcs.dmireset>>.
 The error must then be handled by higher layers of the debugger.
 
-A <<table_stat_encoding,BUSY>> error can be handled by waiting for the access to complete.
-In order for the debugger to access the data of a read operation, it may need to insert an extra <<dmi_transactions,DMI_RD_SA>> transaction.
+A <<transactions.adoc#table_stat_encoding,BUSY>> error can be handled by waiting for the access to complete.
+In order for the debugger to access the data of a read operation, it may need to insert an extra <<transactions.adoc#dmi_transactions,DMI_RD_SA>> transaction.
 The following sequence shows how to recover from a BUSY error on a read operation:
 
-. <<dmi_transactions,DMI_RD>> transaction (<<stat_field,STAT>> = <<table_stat_encoding,SUCCESS>>).
+. <<transactions.adoc#dmi_transactions,DMI_RD>> transaction (<<transactions.adoc#stat_field,STAT>> = <<transactions.adoc#table_stat_encoding,SUCCESS>>).
   This starts the failing read operation.
-. <<dmi_transactions,DMI_NOP>> transaction (<<stat_field,STAT>> = <<table_stat_encoding,BUSY>>).
-  This would usually include the read data in the <<rd_payload_field,RD-PAYLOAD>> field, but in this case the data is undefined as indicated by the <<stat_field,STAT>> field.
-. <<dmi_transactions,DMI_RD_SA>> transaction (<<stat_field,STAT>> = <<table_stat_encoding,BUSY>>).
-  This transaction causes the transaction in step 6 to include <<dmi_register,dmi.data>> in its <<rd_payload_field,RD-PAYLOAD>> field.
+. <<transactions.adoc#dmi_transactions,DMI_NOP>> transaction (<<transactions.adoc#stat_field,STAT>> = <<transactions.adoc#table_stat_encoding,BUSY>>).
+  This would usually include the read data in the <<transactions.adoc#rd_payload_field,RD-PAYLOAD>> field, but in this case the data is undefined as indicated by the <<transactions.adoc#stat_field,STAT>> field.
+. <<transactions.adoc#dmi_transactions,DMI_RD_SA>> transaction (<<transactions.adoc#stat_field,STAT>> = <<transactions.adoc#table_stat_encoding,BUSY>>).
+  This transaction causes the transaction in step 6 to include <<introduction.adoc#dmi_register,dmi.data>> in its <<transactions.adoc#rd_payload_field,RD-PAYLOAD>> field.
   This transaction will not cause another DMI bus access, so the address in this transaction does not matter.
-. <<dtmcs_transactions,DTMCS_WR>> transaction that sets <<dtmcs_register,dtmcs.dmireset>>.
+. <<transactions.adoc#table_transactions,DTMCS_WR>> transaction that sets <<transactions.adoc#dtmcs_register,dtmcs.dmireset>>.
   This clears the sticky error, but does not abort the transaction.
-. <<dtmcs_transactions,DTMCS_RD>> transaction (optional).
-  The debugger can use the <<dtmcs_register,dtmcs.dmistat>> field to check whether the operation has now completed without potentially setting the sticky error again.
-  If <<dtmcs_register,dtmcs.dmistat>> is still <<table_stat_encoding,BUSY>>, repeat this step.
-. <<dmi_transactions,DMI_NOP>> transaction.
+. <<transactions.adoc#table_transactions,DTMCS_RD>> transaction (optional).
+  The debugger can use the <<transactions.adoc#dtmcs_register,dtmcs.dmistat>> field to check whether the operation has now completed without potentially setting the sticky error again.
+  If <<transactions.adoc#dtmcs_register,dtmcs.dmistat>> is still <<transactions.adoc#table_stat_encoding,BUSY>>, repeat this step.
+. <<transactions.adoc#dmi_transactions,DMI_NOP>> transaction.
   This finally returns the read data and status of the read operation.
-  If step 5 was skipped, the response may again be <<table_stat_encoding,BUSY>>, in which case the debugger has to restart from step 3.
+  If step 5 was skipped, the response may again be <<transactions.adoc#table_stat_encoding,BUSY>>, in which case the debugger has to restart from step 3.

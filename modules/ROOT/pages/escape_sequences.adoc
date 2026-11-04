@@ -2,9 +2,9 @@
 = Escape sequences
 
 Escape sequences are sent by the debugger as a form of out-of-band transmission.
-They are used to switch between interface states (see <<states>>) or to recover from error conditions (see <<error_handling>>).
+They are used to switch between interface states (see <<interface_states.adoc#states>>) or to recover from error conditions (see <<error_handling.adoc#error_handling>>).
 
-Inside the target, sequences are detected independently of the normal transactions described in <<transactions>>.
+Inside the target, sequences are detected independently of the normal transactions described in <<transactions.adoc#transactions>>.
 They are encoded in a way that encodes harmless state transitions in JTAG that are very unlikely to be sent by a real JTAG tool.
 In the RSDP interface states, the long string of `'1'`-bits at the beginning of the sequence will put the target into an error state where it will not interpret the rest of the sequence as transactions.
 
@@ -24,7 +24,7 @@ The <<disable_sequence,DISABLE>> sequence is transmitted as follows:
 ----
 
 There is no reply from the target.
-After receiving this sequence, the target must be in the <<disabled_state,DISABLED>> state.
+After receiving this sequence, the target must be in the <<interface_states.adoc#disabled_state,DISABLED>> state.
 
 [[enable_robust_sequence]]
 === ENABLE-ROBUST sequence
@@ -38,10 +38,10 @@ The <<enable_robust_sequence,ENABLE-ROBUST>> sequence and its response from the 
 / 0b0 /                                              -- Debugger drives line
 ----
 
-If the target supports the <<rsdp_robust_state,RSDP-ROBUST>> state, it must be in that state after receiving this sequence.
-The <<stat_field,STAT>> field contains the constant value <<table_stat_encoding,SUCCESS>>.
+If the target supports the <<interface_states.adoc#rsdp_robust_state,RSDP-ROBUST>> state, it must be in that state after receiving this sequence.
+The <<transactions.adoc#stat_field,STAT>> field contains the constant value <<transactions.adoc#table_stat_encoding,SUCCESS>>.
 
-If the target does not support the <<rsdp_robust_state,RSDP-ROBUST>> state, it will treat the sequence like the <<disable_sequence,DISABLE>> sequence without sending a response.
+If the target does not support the <<interface_states.adoc#rsdp_robust_state,RSDP-ROBUST>> state, it will treat the sequence like the <<disable_sequence,DISABLE>> sequence without sending a response.
 
 [[enable_fast_sequence]]
 === ENABLE-FAST sequence
@@ -55,10 +55,10 @@ The <<enable_fast_sequence,ENABLE-FAST>> sequence and its response from the targ
 / 0b0 /                                              -- Debugger drives line
 ----
 
-If the target supports the <<rsdp_fast_state,RSDP-FAST>> state, it must be in that state after receiving this sequence.
-The <<stat_field,STAT>> field contains the constant value <<table_stat_encoding,SUCCESS>>.
+If the target supports the <<interface_states.adoc#rsdp_fast_state,RSDP-FAST>> state, it must be in that state after receiving this sequence.
+The <<transactions.adoc#stat_field,STAT>> field contains the constant value <<transactions.adoc#table_stat_encoding,SUCCESS>>.
 
-If the target does not support the <<rsdp_fast_state,RSDP-FAST>> state, it will treat the sequence like the <<disable_sequence,DISABLE>> sequence without sending a response.
+If the target does not support the <<interface_states.adoc#rsdp_fast_state,RSDP-FAST>> state, it will treat the sequence like the <<disable_sequence,DISABLE>> sequence without sending a response.
 
 [[enable_jtag_sequence]]
 === ENABLE-JTAG sequence
@@ -70,9 +70,9 @@ The <<enable_jtag_sequence,ENABLE-JTAG>> sequence is transmitted as follows:
 / escape(ENABLE-JTAG) /                              -- Sequence from debugger
 ----
 
-If the target supports the <<jtag_state,JTAG>> state, it must be in that state after receiving this sequence.
+If the target supports the <<interface_states.adoc#jtag_state,JTAG>> state, it must be in that state after receiving this sequence.
 
-If the target does not support the <<jtag_state,JTAG>> state, it will treat the sequence like the <<disable_sequence,DISABLE>> sequence.
+If the target does not support the <<interface_states.adoc#jtag_state,JTAG>> state, it will treat the sequence like the <<disable_sequence,DISABLE>> sequence.
 
 [[retransmit_sequence]]
 == RETRANSMIT sequence
@@ -87,10 +87,10 @@ The <<retransmit_sequence,RETRANSMIT>> sequence is transmitted as follows:
 / 0b0 /                                              -- Debugger drives line
 ----
 
-If the target is in the <<rsdp_robust_state,RSDP-ROBUST>> state, it must send both a response to the sequence as well as a retransmitted response.
+If the target is in the <<interface_states.adoc#rsdp_robust_state,RSDP-ROBUST>> state, it must send both a response to the sequence as well as a retransmitted response.
 The fields marked as _Retransmitted response_ must have exactly the same contents as the target's last transmitted response.
 
-If the target is not in the <<rsdp_robust_state,RSDP-ROBUST>> state, it will treat the sequence like the <<disable_sequence,DISABLE>> sequence without sending a response.
+If the target is not in the <<interface_states.adoc#rsdp_robust_state,RSDP-ROBUST>> state, it will treat the sequence like the <<disable_sequence,DISABLE>> sequence without sending a response.
 
 [[unknown_sequence]]
 == UNKNOWN sequences
@@ -100,11 +100,11 @@ The <<unknown_sequence,UNKNOWN>> sequences are any `/ escape(...) /` encodings o
 Only a sequence that is correctly encoded (constant fields and <<sequence_scrc_field,SCRC>> field as expected) is treated as <<unknown_sequence,UNKNOWN>>.
 Anything else is silently ignored by the sequence detector.
 
-A target conforming to this version of the specification must not send a reply and enter the <<disabled_state,DISABLED>> state.
+A target conforming to this version of the specification must not send a reply and enter the <<interface_states.adoc#disabled_state,DISABLED>> state.
 Future versions of this specification may specify additional sequences, for example for new interface states or for multi-drop support.
 
 NOTE: A target can use <<unknown_sequence,UNKNOWN>> as a fallback handler for any of the enable sequences for states it does not support.
-      For example, an RSDP-DTM that only supports the <<rsdp_fast_state,RSDP-FAST>> state only needs to handle the <<enable_fast_sequence,ENABLE-FAST>> sequence and can treat any other sequence as <<unknown_sequence,UNKNOWN>>/<<disable_sequence,DISABLE>> sequence.
+      For example, an RSDP-DTM that only supports the <<interface_states.adoc#rsdp_fast_state,RSDP-FAST>> state only needs to handle the <<enable_fast_sequence,ENABLE-FAST>> sequence and can treat any other sequence as <<unknown_sequence,UNKNOWN>>/<<disable_sequence,DISABLE>> sequence.
 
 [[sequence_fields]]
 == Sequence fields
@@ -183,7 +183,7 @@ Each `'1'` bit of the payload is sent as the sequence `/ 0b01 /`, corresponding 
 
 The <<sequence_random_field,RANDOM>> field is a 32-bit pseudorandom constant intended to prevent misinterpretation of noise or real JTAG operations as an enable sequence.
 
-It is generated by initializing the CRC generator described in <<crc>> with the constant `0x38` and repeating the following algorithm 32 times:
+It is generated by initializing the CRC generator described in <<crc_computation.adoc#crc>> with the constant `0x38` and repeating the following algorithm 32 times:
 
 . Use the least significant bit of the CRC state as data.
 . Feed the CRC generator with a single 0 bit.
@@ -214,7 +214,7 @@ The following values are defined:
 === SCRC field
 
 The SCRC field contains a 6-bit value computed over all the data following the <<sequence_random_field,RANDOM>> field.
-The CRC generator described in <<crc>> is fed with the unencoded data: It receives the value of `/ ST /`, not `/ enc(ST) /`.
+The CRC generator described in <<crc_computation.adoc#crc>> is fed with the unencoded data: It receives the value of `/ ST /`, not `/ enc(ST) /`.
 
 [[sequence_jtag_end_field]]
 === JTAG_END field
@@ -239,5 +239,5 @@ The 2-bit <<seq_seq_field,SEQ>> (sequence counter) field contains the number of 
 [[seq_rcrc_field]]
 === RCRC field
 
-The <<seq_rcrc_field,RCRC>> field is a 6-bit value computed over all data following the <<start_field,START>> field.
-Refer to <<crc>> for calculation of this value.
+The <<seq_rcrc_field,RCRC>> field is a 6-bit value computed over all data following the <<transactions.adoc#start_field,START>> field.
+Refer to <<crc_computation.adoc#crc>> for calculation of this value.

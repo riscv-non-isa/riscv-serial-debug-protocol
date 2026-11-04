@@ -31,10 +31,10 @@ An activation pattern that cannot occur in regular CAN traffic switches both MUX
 
 == Protocol
 
-The protocol used is the same as for RSDPxSP, described in <<rsdpxsp>>.
+The protocol used is the same as for RSDPxSP, described in <<rsdpxsp.adoc#rsdpxsp>>.
 Instead of the SP line, the protocol uses the CAN bus via transceivers, with a low SP corresponding to CAN recessive state and a high SP corresponding to CAN dominant state.
 
-The maximum <<rsdpxsp_divider,divider>> value of the target must be chosen such that the maximum time quantum is less than 0.3&nbsp;µs.
+The maximum <<rsdpxsp.adoc#rsdpxsp_divider,divider>> value of the target must be chosen such that the maximum time quantum is less than 0.3&nbsp;µs.
 As described in <<rsdpxcpl_activation_pattern>>, this prevents normal CAN or CAN&nbsp;FD traffic from being interpreted as an RSDPxCPL activation pattern.
 
 Correspondingly, the debugger must use a faster speed to initially connect to the target, for example a time quantum of 0.25&nbsp;µs.
@@ -42,7 +42,7 @@ Correspondingly, the debugger must use a faster speed to initially connect to th
 [[rsdpxcpl_activation_pattern]]
 == Activation pattern
 
-The RSDPxCPL activation pattern is the calibration sequence of RSDPxSP followed by a valid <<enable_robust_sequence,ENABLE-ROBUST>> or <<enable_fast_sequence,ENABLE-FAST>> sequence.
+The RSDPxCPL activation pattern is the calibration sequence of RSDPxSP followed by a valid <<escape_sequences.adoc#enable_robust_sequence,ENABLE-ROBUST>> or <<escape_sequences.adoc#enable_fast_sequence,ENABLE-FAST>> sequence.
 This sequence contains 1024 signal changes with a distance of at most 0.6&nbsp;µs.
 
 The activation pattern will never occur inside any legal CAN traffic:
@@ -58,7 +58,7 @@ Further safeguarding:
 - RSDPxSP will assume a `'1'`-value whenever the time between two signal changes is longer than 0.9&nbsp;µs, which is the case at the latest at the end of every CAN FD frame
 - Whenever a `'1'` is detected before 1024 `'0'`-values have been seen, the whole activation sequence must be restarted
 - The RSDPxCPL activation is in two steps.
-  The first is the RSDPxSP calibration pattern, and the second a valid <<enable_robust_sequence,ENABLE-ROBUST>> or <<enable_fast_sequence,ENABLE-FAST>> sequence.
+  The first is the RSDPxSP calibration pattern, and the second a valid <<escape_sequences.adoc#enable_robust_sequence,ENABLE-ROBUST>> or <<escape_sequences.adoc#enable_fast_sequence,ENABLE-FAST>> sequence.
   Only after the second step, the CAN module will be disconnected from the RX/TX pins
 
 For the special case that the tool is plugged on to a "live" bus, the following points must be considered:
