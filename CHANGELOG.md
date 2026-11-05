@@ -5,84 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-**_NOTE:_** PROJECTS BUILT USING THE TEMPLATE SHOULD UPDATE THE BELOW SECTIONS AS-NEEDED.
-
 ## [Unreleased]
-- Have `repo-setup.yml` enable *Automatically delete head branches*, and add it
-  to the Repository Setup Checklist as step 6. Three workflows open their PRs
-  from a `gitbot/*` branch, and `create-pull-request`'s `delete-branch: true`
-  only deletes those when a PR is closed **unmerged** -- deletion on merge is a
-  repository setting that is off by default and that no workflow was setting. So
-  every merged bot PR left its branch behind for good:
-  `riscv-high-assurance-cryptography` had five stale `gitbot/*` branches, and the
-  setting was `false` in all five repositories on the template, including this
-  one.
-- Sign bot commits so their PRs can merge where `main` requires signed commits.
-  `template-sync.yml`, `version-bot.yml` (milestone PR) and `build-pdf.yml`
-  (site version stamp PR) pushed with `GHTOKEN`, a personal access token, which
-  `create-pull-request` cannot sign, so under the `riscv` organization's ruleset
-  every bot PR was blocked even with DCO passing. When a GitHub App is configured
-  (`TEMPLATE_SYNC_APP_CLIENT_ID` and `TEMPLATE_SYNC_PRIVATE_KEY` secrets), each workflow
-  now mints its token and passes `sign-commits: true`; otherwise it falls back
-  to `GHTOKEN` as before. See README.adoc, "Signed commits: use a GitHub App".
-- Keep the version stamp on the release tag when `main` refuses the bot's
-  push. The `riscv` organization ruleset requires signed commits and a passing
-  DCO check on the default branch, so `version-bot.yml`'s pre-tag push of the
-  `antora.yml` stamp is refused in every `riscv` repository. The bot used to
-  discard the stamp and tag the unstamped commit, so the release's versioned
-  site path was dropped by the next push to `main`. It now tags the stamp
-  commit and pushes only the tag, which the ruleset does not cover. A rerun
-  for an already-tagged version reuses the tag instead of failing.
-- Stop `template-sync.yml` from overwriting `GOVERNANCE.md`. The template's copy
-  is a placeholder every task group rewrites, and `UPGRADING.md` already said to
-  treat an amended copy as a shared file, but the workflow copied it
-  unconditionally, so each sync PR replaced a repository's governing group and
-  mailing list with the Documentation SIG's. `GOVERNANCE.md` and
-  `CONTRIBUTING.md` are now shared files: the sync PR lists them for a manual
-  merge when the template's copy changes, and never overwrites them.
-- Add `scripts/cross-page-xrefs.rb` to the files `template-sync.yml` copies and
-  to `UPGRADING.md`'s template-owned list. The Makefile requires it for the PDF
-  build, but it was missing from both, so downstream repositories never received
-  updates to it through template sync.
-- Add `template-sync.yml`, a weekly (and manually dispatchable) workflow that
-  opens a pull request copying template-owned file updates from
-  `docs-spec-template` into a downstream repository, using the file-ownership
-  rules already documented in `UPGRADING.md`. Requires `.template-version`
-  (UPGRADING.md section 1) and a `GHTOKEN` secret to push workflow-file
-  changes.
-- Ship a working `.vale.ini`. It was committed as a 0-byte file, so Vale ran on
-  every pull request and linted nothing — and because `UPGRADING.md` listed it as
-  template-owned ("overwrite without reading the diff"), a repo following the
-  upgrade procedure silently wiped its own Vale config. `.vale.ini` is now a
-  **shared** file: `StylesPath`/`Packages` are template-owned, `BasedOnStyles`,
-  `Vocab` and rule disables are yours.
-- Fix `tests/release-info-test.sh` reporting 23 failures in a doc-mode repository.
-  The phase assertions ran against the repo root, so they inherited its mode and
-  compared spec-mode expectations against doc mode's (correct) empty strings. The
-  suite now drives a copy of the script from a scratch repo with no `.docmode`,
-  so it passes 78/78 in either mode.
-- Correct `MIGRATION.md`'s doc-mode checklist, which told the reader to hand-edit
-  `version-bot.yml` to add a `mode` output and gate `milestone-pr` on it. Both
-  landed on `main` in #150; the instruction invited re-applying an edit that is
-  already there.
-- Fix the header logo and the "RISC-V Specifications" breadcrumb 404ing on every
-  page of a standalone GitHub Pages site: `scripts/build-pages-site.sh` now emits
-  a `home/index.html` redirect to the site root. The shared RISC-V UI links to
-  that path from every page, and two of its three references hardcode it, so a
-  single-repo build cannot retarget them from a playbook.
-- Keep the Antora site that the PR gate already builds, as a *Rendered site
-  (Antora)* artifact, so reviewers can see a content change rendered
-  (`validate-content-source.yml`). The cover logo is now staged from
-  `docs-resources` for that build, so the start page renders standalone — which
-  also means the gate validates the cover image macro instead of exception-listing
-  it. Both build workflows now write a direct artifact link into the run summary.
-- Publish the Antora HTML site to the repository's own GitHub Pages site on each
-  `v*` release tag, alongside the release PDF (`publish-site.yml`,
-  `scripts/build-pages-site.sh`). Requires a one-time *Settings > Pages >
-  Source: GitHub Actions* by a repository admin. Does not replace the central
-  docs.riscv.org site.
 
-## [4.0.0] - 2004-01-27
-- Workflow improvements
-- Makefile refactoring
-- Readme updates
+## Releases on old gitlab repository
+
+Prior to moving to github and a new version of the template, this project was maintained in the [riscv-rsdp-spec repository on gitlab](https://gitlab.com/lauterbach/riscv-rsdp-spec).
+Releases below are versioned using the old semantic versioning scheme.
+
+### [0.1.5] - 2026-10-20
+- Clarify idle cycles between transactions
+
+### [0.1.4] - 2026-10-20
+- Clarify escape sequence encoding
+- Remove TRN fields where neither side drives in order to not depend on pull resistors
+- Define how extensions can use DMI-internal bus addresses and TT encodings
+
+### [0.1.3] - 2026-08-25
+- Add rationale behind arbitrary time constants in RSDPxSP
+- In RSDPxSP, consistently use state name “TRANSMIT” instead of “SEND”
+- Add/change figures in RSDPxSP and RSDPxCPL chapters
+- Refer to “IDCODE or BYPASS” register in escape sequence
+- Fix small grammar errors
+- Improve wording (remove “we” language, split long sentences)
+
+### [0.1.2] - 2026-07-27
+- Change rules governing RD-PAYLOAD of DMI transations
+- Add clarification section on how to handle DMI errors
+- Define "zero hold-time requirement", "launch", "latch"
+- Change reading order in transaction format (now left-to-right)
+- Clarify references to the RISC-V Debug Specification
+- Rename CLOCK/DATA -> RCLK/RDAT
+- Add suggested debug connectors (same as for JTAG)
+- Rework RSDPxSP and RSDPxCPL
+
+### [0.1.1] - 2026-05-08
+- Fix link to Debug Spec in bibliography
+- Fix link to reference implementation repository
+- Fix converter name in diagram
+- Make RSDPxSP diagram look consistent with RSDPxCPL diagram
+
+### [0.1.0] - 2026-05-07
+- Initial release
