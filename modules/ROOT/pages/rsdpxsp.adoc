@@ -145,7 +145,7 @@ When 6 time quanta expire while the SP line is low, the converter enters <<rsdpx
 
 In <<rsdpxsp_state_idle,IDLE>> state, the SP converter generates a continuous stream of RCLK pulses with RDAT low.
 
-When the debugger asserts the SP line, the converter enters the <<rsdpxsp_state_receive,RECEIVE>> state.
+When the debugger drives a rising edge on the SP line, the converter enters the <<rsdpxsp_state_receive,RECEIVE>> state.
 When the RSDP-DTM asserts the RDAT output enable and sends a `'1'`, the converter enters the <<rsdpxp_state_transmit,TRANSMIT>> state.
 
 NOTE: This means the converter will not send the initial `/ 0b0 /` field of the response.
@@ -188,8 +188,8 @@ The following sections describe the behavior a debugger can use to communicate w
 
 To attach to a target from any state, a debugger can use the following sequence:
 
-. Send a long high pulse on the SP line, for example 10&nbsp;ms, to ensure the converter is in <<rsdpxsp_state_inactive,INACTIVE>> state.
-. Perform calibration with a time quantum of 50&nbsp;µs, i.e. send an initial rising edge followed by at least 1100 further edges that are 100&nbsp;µs apart.
+. Send a rising edge on the SP line and wait sufficiently long (for example 10&nbsp;ms) to ensure the converter is in <<rsdpxsp_state_inactive,INACTIVE>> state.
+. Perform calibration with a time quantum of 50&nbsp;µs, i.e. send an initial falling edge followed by at least 1100 further edges that are 100&nbsp;µs apart.
 . Send an <<escape_sequences.adoc#enable_robust_sequence,ENABLE-ROBUST>> or <<escape_sequences.adoc#enable_robust_sequence,ENABLE-FAST>> sequence and check the target's response.
 
 The debugger can then continue to communicate at this initial speed or it can attempt to switch to a higher frequency, as described in <<rsdpxsp_debugger_highspeed>>.
