@@ -7,7 +7,7 @@ This address space commonly contains one or more Debug Module (DM) instances, wh
 
 With the JTAG-DTM, a simplified view of the system is as follows:
 
-[[fig_dtm_sytem]]
+[[fig_dtm_system]]
 .RISC-V platform and debugger, simplified view
 image::dtm_system.svg[]
 
@@ -19,7 +19,7 @@ The JTAG-DTM can conceptually be split into two parts, the JTAG transport and DM
 .JTAG-DTM split into two parts
 image::jtag_dtm.svg[]
 
-The JTAG transport implements the 4-pin JTAG interface, the state machine and shift registers that provide read-write access to three relevant registers, namely <<transactions.adoc#idcode_register,idcode>>, <<transactions.adoc#dtmcs_register,dtmcs>> and <<introduction.adoc#dmi_register,dmi.>>
+The JTAG transport implements the 4-pin JTAG interface, the state machine and shift registers that provide read-write access to three relevant registers, namely <<transactions.adoc#idcode_register,idcode>>, <<transactions.adoc#dtmcs_register,dtmcs>> and <<introduction.adoc#dmi_register,dmi>>.
 In the context of the JTAG-DTM, the relevant operation is a read of one of these registers (Capture-DR state) followed by a write to the same register (Update-DR state).
 
 The DMI bus manager implements these three registers and contains the state machine and other logic to access DMI subordinates.
@@ -70,7 +70,7 @@ Slightly less efficient due to larger <<transactions.adoc#start_field,START>> an
 This way, the type (and therefore size and layout) of a transaction is already known before that transaction starts. This avoids that certain transmission errors can lead to false assumptions about the existence and position of fields in a transaction.
 |===
 
-See <<performance_comparison.adoc#performance_comparison>> for a detailed performance comparison and <<error_handling.adoc#error_handling>> for a detailed description how the robustness features can be used by a debugger.
+See <<performance_comparison.adoc#performance_comparison>> for a detailed performance comparison and <<error_handling.adoc#error_handling>> for a detailed description of how the robustness features can be used by a debugger.
 
 == Option for compatibility with JTAG
 

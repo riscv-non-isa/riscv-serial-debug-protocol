@@ -100,7 +100,7 @@ The <<unknown_sequence,UNKNOWN>> sequences are any `/ escape(...) /` encodings o
 Only a sequence that is correctly encoded (constant fields and <<sequence_scrc_field,SCRC>> field as expected) is treated as <<unknown_sequence,UNKNOWN>>.
 Anything else is silently ignored by the sequence detector.
 
-A target conforming to this version of the specification must not send a reply and enter the <<interface_states.adoc#disabled_state,DISABLED>> state.
+A target conforming to this version of the specification must not send a reply and must enter the <<interface_states.adoc#disabled_state,DISABLED>> state.
 Future versions of this specification may specify additional sequences, for example for new interface states or for multi-drop support.
 
 NOTE: A target can use <<unknown_sequence,UNKNOWN>> as a fallback handler for any of the enable sequences for states it does not support.
@@ -149,11 +149,11 @@ According to these rules, a debugger may use the following table to send these s
 [[sequence_ones_field]]
 === ONES field
 
-The <<sequence_ones_field,ONES>> field is a sequence of 80 `/ 1b1 /` bits.
+The <<sequence_ones_field,ONES>> field is a sequence of 80 `/ 0b1 /` bits.
 This ensures that a JTAG TAP will be in Test-Logic-Reset state and an enabled RSDP-DTM will be in its error state.
 
 The target must detect this field independently of any other state.
-After receiving at least 80 consecutive  `/ 1b1 /`, it must treat the next `/ 0b0 /` bit as the first bit of the <<sequence_jtag_begin_field,JTAG_BEGIN>> field.
+After receiving at least 80 consecutive  `/ 0b1 /`, it must treat the next `/ 0b0 /` bit as the first bit of the <<sequence_jtag_begin_field,JTAG_BEGIN>> field.
 
 While the target is driving the RDAT line, it may suspend its detection of the <<sequence_ones_field,ONES>> field.
 
@@ -162,12 +162,12 @@ NOTE: Any sequence or transaction response from the target is guaranteed to be s
       However, if the target is targeting high frequencies, it may be problematic for it to sample its own transmitted data.
       Disabling the sequence detector or feeding it with a constant `0` signal avoids this issue.
 
-A debugger that attaches from an unknown state should send a sufficient number of RCLK cycles with RDAT tristated to ensure that the target finishes any potential response, followed by at least 80 `/ 1b1 /` bits.
+A debugger that attaches from an unknown state should send a sufficient number of RCLK cycles with RDAT tristated to ensure that the target finishes any potential response, followed by at least 80 `/ 0b1 /` bits.
 
 [[sequence_jtag_begin_field]]
 === JTAG_BEGIN field
 
-The <<sequence_jtag_begin_field,JTAG_BEGIN>> field is the fixed 3-bit sequence `/ 010 /`.
+The <<sequence_jtag_begin_field,JTAG_BEGIN>> field is the fixed 3-bit sequence `/ 0b010 /`.
 This transitions the JTAG state machine into the Capture-DR state, while the IR value is still the IDCODE command.
 
 [[sequence_enc_encoding]]
@@ -227,7 +227,7 @@ This transitions the JTAG state machine into the Run-Test/Idle state and also dr
 
 The <<version_seq_field,VERSION>> contains a 32-bit value with information about the RSDP-DTM or RSDPJ-DTM implementation.
 
-The last significant four bits are defined as the constant value `0x1`.
+The least significant four bits are defined as the constant value `0x1`.
 The remaining bits must be ignored by the debugger, but must be sent as zero by a target.
 Their use, as well as the meaning of other version numbers, is not defined by this version of this document.
 

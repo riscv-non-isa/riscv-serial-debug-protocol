@@ -102,7 +102,7 @@ digraph rsdpxsp_states {
 [[rsdpxsp_state_inactive]]
 === INACTIVE state
 
-Inactive state is the initial state of the converter.
+<<rsdpxsp_state_inactive,INACTIVE>> state is the initial state of the converter.
 It is entered when the SP line stays high for at least 6 time quanta.
 When a falling edge is received, the converter enters <<rsdpxsp_state_calibrate,CALIBRATE>> state.
 

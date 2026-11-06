@@ -292,7 +292,7 @@ The <<rd_payload_field,RD-PAYLOAD>> contains the 32-bit data read from the regis
 [[intbus_wr_transaction]]
 === INTBUS_WR transaction
 
-The <<intbus_rd_transaction,INTBUS_WR>> transaction writes one of the DTM-internal registers described in <<intbus>>.
+The <<intbus_wr_transaction,INTBUS_WR>> transaction writes one of the DTM-internal registers described in <<intbus>>.
 
 The <<wr_payload_field,WR-PAYLOAD>> contains the 8-bit address of the register to be accessed, followed by the 32-bit data to be written to the register.
 The <<rd_payload_field,RD-PAYLOAD>> is empty.
@@ -351,7 +351,7 @@ The following registers are defined:
 
 | `0x02`
 | Single-Pin DIVider (<<spdiv_register,spdiv>>)
-| <<dtmcs_register>>
+| <<spdiv_register>>
 
 | `0x03:0x0F`
 | Reserved for future versions of this specification
@@ -366,7 +366,7 @@ The following registers are defined:
 | <<extensions>>
 |===
 
-When unimplemented registes are accessed, implementations must ignore writes and must return all-zero read data.
+When unimplemented registers are accessed, implementations must ignore writes and must return all-zero read data.
 
 [[idcode_register]]
 === IDCODE (idcode, at 0x00)
@@ -469,7 +469,7 @@ NOTE: See <<example_transaction_sequences.adoc#example_dmi_pipelining>> for a fu
 
 RSDP can be extended either by standards defined by RISC-V International, or by vendor-defined extensions.
 
-Extensions are indentified and controlled by registers on the DTM-internal bus residing at the reserved addresses of <<table_intbus>>.
+Extensions are identified and controlled by registers on the DTM-internal bus residing at the reserved addresses of <<table_intbus>>.
 Each extension should define a maximum of 8 addresses in this address space.
 If more registers are needed, an indirect addressing scheme should be used.
 

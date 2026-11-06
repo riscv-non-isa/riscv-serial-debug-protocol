@@ -60,6 +60,6 @@ Data that is transmitted over the physical pin interface is described as in the 
 Lines enclosed in `/ ... /` represent bits sent via the RDAT wire.
 These bit sequences are always sent top to bottom, left to right.
 All multi-bit fields are sent in little-endian bit order.
-Constants given in binary are sent with the same number of bits that is contained in the constant.
+Constants given in binary are sent with the same number of bits that are contained in the constant.
 
 The example means that FIELDA is sent first (starting with its least significant bit), then FIELDB, then a constant binary field containing a single 0 bit.
