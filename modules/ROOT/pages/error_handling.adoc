@@ -61,7 +61,7 @@ If a DMI transaction's <<transactions.adoc#stat_field,STAT>> field is not <<tran
 Due to the sticky error handling, a debugger may send multiple DMI transactions as a batch before checking if they were successful.
 The first transaction whose <<transactions.adoc#stat_field,STAT>> field is not <<transactions.adoc#table_stat_encoding,SUCCESS>> and all following transactions will be ignored by the target.
 
-A debugger will typically respond to a <<transactions.adoc#table_stat_encoding,FAILED>> access using a <<transactions.adoc#table_transactions,DTMCS_RD>> transaction to inspect the <<transactions.adoc#dtmcs_register,dtmcs.errinfo>> field, followed by a <<transactions.adoc#table_transactions,DTMCS_WR>> transaction that sets <<transactions.adoc#dtmcs_register,dtmcs.dmireset>>.
+A debugger will typically respond to a <<transactions.adoc#table_stat_encoding,FAILED>> access using a <<transactions.adoc#intbus_rd_transaction,INTBUS_RD>> transaction to inspect the <<transactions.adoc#dtmcs_register,dtmcs.errinfo>> field, followed by a <<transactions.adoc#intbus_wr_transaction,INTBUS_WR>> transaction that sets <<transactions.adoc#dtmcs_register,dtmcs.dmireset>>.
 The error must then be handled by higher layers of the debugger.
 
 A <<transactions.adoc#table_stat_encoding,BUSY>> error can be handled by waiting for the access to complete.
@@ -75,9 +75,9 @@ The following sequence shows how to recover from a BUSY error on a read operatio
 . <<transactions.adoc#dmi_transactions,DMI_RD_SA>> transaction (<<transactions.adoc#stat_field,STAT>> = <<transactions.adoc#table_stat_encoding,BUSY>>).
   This transaction causes the transaction in step 6 to include <<introduction.adoc#dmi_register,dmi.data>> in its <<transactions.adoc#rd_payload_field,RD-PAYLOAD>> field.
   This transaction will not cause another DMI bus access, so the address in this transaction does not matter.
-. <<transactions.adoc#table_transactions,DTMCS_WR>> transaction that sets <<transactions.adoc#dtmcs_register,dtmcs.dmireset>>.
+. <<transactions.adoc#intbus_wr_transaction,INTBUS_WR>> transaction that sets <<transactions.adoc#dtmcs_register,dtmcs.dmireset>>.
   This clears the sticky error, but does not abort the transaction.
-. <<transactions.adoc#table_transactions,DTMCS_RD>> transaction (optional).
+. <<transactions.adoc#intbus_rd_transaction,INTBUS_RD>> transaction to read <<transactions.adoc#dtmcs_register,dtmcs.dmistat>> (optional).
   The debugger can use the <<transactions.adoc#dtmcs_register,dtmcs.dmistat>> field to check whether the operation has now completed without potentially setting the sticky error again.
   If <<transactions.adoc#dtmcs_register,dtmcs.dmistat>> is still <<transactions.adoc#table_stat_encoding,BUSY>>, repeat this step.
 . <<transactions.adoc#dmi_transactions,DMI_NOP>> transaction.
