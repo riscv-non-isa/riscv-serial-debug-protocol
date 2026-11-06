@@ -313,6 +313,7 @@ It is sent in full in the <<dmi_transactions,DMI_WR>> and <<dmi_transactions,DMI
 The <<dmi_transactions,DMI_WR_SA>> and <<dmi_transactions,DMI_RD_SA>> only include a short address of two bits, retaining the remaining bits of <<introduction.adoc#dmi_register,dmi.addr>> from the last <<dmi_transactions,DMI_WR>> or <<dmi_transactions,DMI_RD>> transaction.
 This allows efficient access to wide registers of a single DM (e.g. data0 to data3 or sbdata0 to sbdata3) or repeated accesses to the same registers.
 Read and write addresses are not remembered separately, so a <<dmi_transactions,DMI_WR_SA>> transaction can use the upper address bits from either a <<dmi_transactions,DMI_WR>> or <<dmi_transactions,DMI_RD>> transaction, as can a <<dmi_transactions,DMI_RD_SA>> transaction.
+An <<escape_sequences.adoc#enable_robust_sequence,ENABLE-ROBUST>> or <<escape_sequences.adoc#enable_fast_sequence,ENABLE-FAST>> sequence sets the address remembered by the DTM to an unknown value, so a debugger must send a full <<dmi_transactions,DMI_WR>> or <<dmi_transactions,DMI_RD>> transaction as the first DMI transaction.
 
 The <<introduction.adoc#dmi_register,dmi.addr>> field's read value is never sent back to the debugger as it would just be a copy of the written value.
 
