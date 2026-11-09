@@ -71,7 +71,7 @@ The following sequence shows how to recover from a BUSY error on a read operatio
 . <<transactions.adoc#dmi_transactions,DMI_RD>> transaction (<<transactions.adoc#stat_field,STAT>> = <<transactions.adoc#table_stat_encoding,SUCCESS>>).
   This starts the failing read operation.
 . <<transactions.adoc#dmi_transactions,DMI_NOP>> transaction (<<transactions.adoc#stat_field,STAT>> = <<transactions.adoc#table_stat_encoding,BUSY>>).
-  This includes a 32-bit <<transactions.adoc#rd_payload_field,RD-PAYLOAD>> field, which contains invalid data as indicated by the <<transactions.adoc#stat_field,STAT>> field.
+  This includes a 32-bit <<transactions.adoc#rd_payload_field,RD-PAYLOAD>> field, which contains an undefined value as indicated by the <<transactions.adoc#stat_field,STAT>> field.
 . <<transactions.adoc#dmi_transactions,DMI_RD_SA>> transaction (<<transactions.adoc#stat_field,STAT>> = <<transactions.adoc#table_stat_encoding,BUSY>>).
   This transaction causes the transaction in step 6 to include <<introduction.adoc#dmi_register,dmi.data>> in its <<transactions.adoc#rd_payload_field,RD-PAYLOAD>> field.
   This transaction will not cause another DMI bus access, so the address in this transaction does not matter.

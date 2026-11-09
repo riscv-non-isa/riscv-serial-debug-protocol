@@ -320,7 +320,7 @@ The <<introduction.adoc#dmi_register,dmi.addr>> field's read value is never sent
 The <<introduction.adoc#dmi_register,dmi.data>> field's write value is only sent for the <<dmi_transactions,DMI_WR>> and <<dmi_transactions,DMI_WR_SA>> transactions.
 It is sent in the <<wr_payload_field,WR-PAYLOAD>> field, after the address.
 
-If the most recently executed DMI transaction was neither <<dmi_transactions,DMI_RD>> nor <<dmi_transactions,DMI_RD_SA>>, or if there was no DMI transaction since the most recent <<escape_sequences.adoc#enable_robust_sequence,ENABLE-ROBUST>> or <<escape_sequences.adoc#enable_fast_sequence,ENABLE-FAST>> sequence, <<rd_payload_field,RD-PAYLOAD>> is empty.
+If the most recent DMI transaction was neither <<dmi_transactions,DMI_RD>> nor <<dmi_transactions,DMI_RD_SA>>, or if there was no DMI transaction since the most recent <<escape_sequences.adoc#enable_robust_sequence,ENABLE-ROBUST>> or <<escape_sequences.adoc#enable_fast_sequence,ENABLE-FAST>> sequence, <<rd_payload_field,RD-PAYLOAD>> is empty.
 Otherwise, the length of <<rd_payload_field,RD-PAYLOAD>> is 32 bits.
 If <<rd_payload_field,RD-PAYLOAD>> is nonempty, it contains the value of <<introduction.adoc#dmi_register,dmi.data>>, which is either the data read from the DMI or an undefined value in error cases.
 
