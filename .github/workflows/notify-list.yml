@@ -1,3 +1,4 @@
+---
 # Emails the group's mailing list when a new issue is opened.
 # Set up by riscv-admin/adm-list-notify; the list address is the repo secret LIST_NOTIFY_EMAIL.
 name: Notify list
