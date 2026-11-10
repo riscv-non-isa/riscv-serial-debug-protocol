@@ -19,7 +19,7 @@ A transaction is transmitted as follows (refer to <<introduction.adoc#wire_forma
 ----
 
 This corresponds to the following waveforms for the two RSDP states.
-Note that <<wr_payload_field,WR-PAYLOAD>> and <<rd_payload_field,RD-PAYLOAD>> length depends on the transaction and may be zero.
+Note that the lengths of <<wr_payload_field,WR-PAYLOAD>> and <<rd_payload_field,RD-PAYLOAD>> depend on the transaction and may be zero.
 
 [[figure_format_robust]]
 .Waveform of an RSDP-ROBUST transaction
@@ -383,7 +383,7 @@ The <<dtmcs_register,dtmcs.idle>> field is meaningless in RSDP interface states,
 The <<dtmcs_register,dtmcs.dtmhardreset>> field only resets the state of the DMI bus manager, not the communication state with the debugger.
 In particular, it does not interfere with the target's response to the <<intbus_wr_transaction,INTBUS_WR>> transaction, or, in <<interface_states.adoc#rsdp_robust_state,RSDP-ROBUST>> state, the sequence counter and type of the following transaction.
 
-An RSDP-DTM or RSDPJ-DTM compliant to this version of this specification must set <<dtmcs_register,dtmcs.version>> to the value 1.
+An RSDP-DTM or RSDPJ-DTM compliant with this version of this specification must set <<dtmcs_register,dtmcs.version>> to the value 1.
 
 [[spdiv_register]]
 === Single-Pin DIVider register (spdiv, at 0x02)

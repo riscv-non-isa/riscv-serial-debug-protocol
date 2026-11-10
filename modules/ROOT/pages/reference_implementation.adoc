@@ -21,7 +21,7 @@ This module has the following signals:
 | Asynchronous active-high power-on reset.
 
 | `iRSDP_Clk`
-| Connect to RCLK I/O pin. All Interfaces of the RSDP transport are synchronous to the rising edge of this clock.
+| Connect to RCLK I/O pin. All interfaces of the RSDP transport are synchronous to the rising edge of this clock.
 
 | `iRSDP_Data`
 | Connect to RDAT I/O input buffer's output.
@@ -34,36 +34,36 @@ This module has the following signals:
 
 | `oUseJtag`
 | To implement an RSDPJ-DTM, use this signal to multiplex between the RSDP transport and the JTAG transport's signals.
-  A `'0'` level means that the RSDP transport's signals should be used, a `1` level means that the JTAG transport's signals should be used.
-  In <<interface_states.adoc#disabled_state,DISABLED>> state, `oUseJtag`, `oJtag_CapDR` and `oJtagUpdDR` are kept at `0`.
+  A `'0'` level means that the RSDP transport's signals should be used, a `'1'` level means that the JTAG transport's signals should be used.
+  In <<interface_states.adoc#disabled_state,DISABLED>> state, `oUseJtag`, `oJtag_CapDR` and `oJtag_UpdDR` are kept at `'0'`.
   This signal can be ignored if an RSDP-DTM is implemented.
 
 | `oJtag_Instr`
 | JTAG instruction register.
-  This signal is valid at least two cycles before `oJtag_CapDR` or `oJtagUpdDR`.
+  This signal is valid at least two cycles before `oJtag_CapDR` or `oJtag_UpdDR`.
   This allows the DMI bus manager implementation to implement a pipelined decoder for the IR.
 
 | `oJtag_CapDR`
 | Capture strobe, which indicates that the JTAG TAP Controller is in the JTAG Capture-DR state and samples the data provided on the `iJtag_Op` and `iJtag_Data` inputs.
 
 | `iJtag_Op`
-| Two bit _op_ field from a <<introduction.adoc#dmi_register,dmi>> access, sent to debugger, transferred via TDO.
+| Two-bit _op_ field from a <<introduction.adoc#dmi_register,dmi>> access, sent to debugger, transferred via TDO.
 
 |`iJtag_Data`
-| 32 bit data value, sent to debugger, transferred via TDO. +
+| 32-bit data value, sent to debugger, transferred via TDO. +
   This either corresponds to <<introduction.adoc#dmi_register,dmi>> read data or <<transactions.adoc#dtmcs_register,dtmcs>> read value or <<transactions.adoc#idcode_register,idcode>> value, depending on `oJtag_Instr`.
 
 | `oJtag_UpdDR`
 | Update strobe, which indicates that the JTAG TAP controller is in the JTAG Update-DR state.
 
 | `oJtag_Op`
-| Two bit _op_ field for a <<introduction.adoc#dmi_register,dmi>> access, sent from debugger, transferred via TDI.
+| Two-bit _op_ field for a <<introduction.adoc#dmi_register,dmi>> access, sent from debugger, transferred via TDI.
 
 | `oJtag_Addr`
-| n bit address value used for a <<introduction.adoc#dmi_register,dmi>> access.
+| n-bit address value used for a <<introduction.adoc#dmi_register,dmi>> access.
 
 | `oJtag_Data`
-| 32 bit data value, sent from debugger, transferred via TDI. +
+| 32-bit data value, sent from debugger, transferred via TDI. +
   This either corresponds to <<introduction.adoc#dmi_register,dmi>> write data or <<transactions.adoc#dtmcs_register,dtmcs>> write value, depending on `oJtag_Instr`.
 |===
 

@@ -2,7 +2,7 @@
 = CRC computation
 
 The CRC polynomial used is the one mentioned in the _ITU Recommendation G.704_, figure&nbsp;A.1 cite:[itu_g704].
-This is a reference input of the polynomial in C:
+This is a reference implementation of the polynomial in C:
 
 [source,c]
 ----

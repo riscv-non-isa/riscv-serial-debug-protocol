@@ -119,7 +119,7 @@ At the turnaround from target to debugger, the debugger must insert a gap in its
 Point F marks the rising RCLK edge that causes the target to start sending the final `/ 0b0 /` bit, while Point G marks the point that causes the target to tristate the RDAT line.
 After point H, where the debugger samples the final `/ 0b0 /` bit from the target, it may begin driving its initial `/ 0b0 /` bit, along with restarting the RCLK signal, shown here at point I.
 With this procedure, the RDAT line is undriven for some time and can thus float to an unpredictable state.
-However, this is invisible to the target, which only samples RDAT line at rising RCLK edges.
+However, this is invisible to the target, which only samples the RDAT line at rising RCLK edges.
 
 [[figure_turnaround_t2d_fast]]
 .Turnaround of RDAT line from target to debugger at high frequencies

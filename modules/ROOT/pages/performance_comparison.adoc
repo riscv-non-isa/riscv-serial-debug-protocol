@@ -88,7 +88,7 @@ Given as a relative efficiency compared to JTAG:
 |===
 
 It can be seen that <<interface_states.adoc#rsdp_fast_state,RSDP-FAST>> performance exceeds JTAG performance while saving two pins.
-<<interface_states.adoc#rsdp_robust_state,RSDP-ROBUST>> only shows a loss of approximately 30&nbsp;% of performance, both for raw data rate in block transfers as well as latency of single accesses.
+<<interface_states.adoc#rsdp_robust_state,RSDP-ROBUST>> only shows a loss of approximately 30&nbsp;% of performance, both for raw data rate in block transfers and latency of single accesses.
 This is in contrast to cJTAG which even with optimistic assumptions loses more than 75&nbsp;% of performance compared to JTAG.
 
 As it is likely that the RSDP protocol can be run at higher frequencies than JTAG, it is expected that even <<interface_states.adoc#rsdp_robust_state,RSDP-ROBUST>> will outperform JTAG in practice.

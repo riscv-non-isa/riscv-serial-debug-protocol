@@ -21,14 +21,14 @@ An RSDP-DTM or RSDPJ-DTM must support the DISABLED state.
 [[rsdp_robust_state]]
 == RSDP-ROBUST state
 
-In <<rsdp_robust_state,RSDP-ROBUST>> state, the DTM communicates the robust variant of the protocol.
+In <<rsdp_robust_state,RSDP-ROBUST>> state, the DTM communicates using the robust variant of the protocol.
 
 See <<system_overview.adoc#fast_robust_interface_states>> for key differences between <<rsdp_robust_state,RSDP-ROBUST>> and <<rsdp_fast_state,RSDP-FAST>>.
 
 [[rsdp_fast_state]]
 == RSDP-FAST state
 
-In <<rsdp_fast_state,RSDP-FAST>> state, the DTM communicates the fast variant of the protocol.
+In <<rsdp_fast_state,RSDP-FAST>> state, the DTM communicates using the fast variant of the protocol.
 This interface state transfers fewer bits, both due to the missing <<transactions.adoc#crc_field,CRC>> field and shorter <<transactions.adoc#start_field,START>> field and because there is no need to execute <<transactions.adoc#nop_transaction,NOP>> transactions.
 
 See <<system_overview.adoc#fast_robust_interface_states>> for key differences between <<rsdp_fast_state,RSDP-FAST>> and <<rsdp_robust_state,RSDP-ROBUST>>.

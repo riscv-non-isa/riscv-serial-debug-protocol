@@ -3,7 +3,7 @@
 
 This specification describes a new RISC-V Serial Debug Protocol (RSDP), implemented by two additional types of Debug Transport Module (DTM) in addition to the JTAG-DTM from the _RISC-V Debug Specification_ cite:[riscv-debug-spec-1.0]:
 
-* An RSDP DTM (RSDP-DTM) that translates two I/O signals into an on-chip DMI manager.
+* An RSDP DTM (RSDP-DTM) that implements an on-chip DMI manager, controlled via two I/O signals.
 * A combined RSDP and JTAG DTM (RSDPJ-DTM) that utilizes the same four JTAG signals as the JTAG-DTM, but can operate in an RSDP interface state. Like any DTM, its purpose is to act as an on-chip DMI manager.
 
 RSDP uses the behavior and register descriptions from the JTAG-DTM described in _RISC-V Debug Specification v1.0_, section&nbsp;6.1 cite:[riscv-debug-spec-1.0].
@@ -44,7 +44,7 @@ Data must be stable for some time immediately preceding the clock edge, but may 
 [[launch_latch]]
 launch, latch::
 In timing specifications, launching is the act of a clocked driver of a data line changing the signal to a new value, while latching is the act of sampling the signal.
-The terms are used to specify both the clock edge where these events occur as well as timing parameters.
+The terms are used to specify both the clock edge where these events occur and timing parameters.
 
 [[wire_format]]
 == Serial transmission format

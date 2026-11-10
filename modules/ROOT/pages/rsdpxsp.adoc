@@ -11,7 +11,7 @@ A target can optionally implement this protocol instead of or in addition to the
 image::rsdpxsp_system.svg[]
 
 RSDPxSP encodes the RSDP bits that would normally be sent over the RCLK and RDAT lines via a single pin (SP), using the distance between signal edges to carry information.
-A RDAT value of `'0'` is encoded with a short, a value of `'1'` with a long distance.
+An RDAT value of `'0'` is encoded with a short distance, a value of `'1'` with a long distance.
 
 In the target, RSDPxSP may be implemented as an _RSDPxSP converter_ module that uses the SP pin to generate the RCLK and RDAT inputs to the RSDP-DTM and receives the RDAT output enable and value outputs from the RSDP-DTM.
 
@@ -109,7 +109,7 @@ When a falling edge is received, the converter enters <<rsdpxsp_state_calibrate,
 [[rsdpxsp_state_calibrate]]
 === CALIBRATE state
 
-In <<rsdpxsp_state_calibrate,CALIBRATE>> state, it is assumed that the debugger sends at least 1100 `'0'` bits, that is edges that are 2 time quanta apart.
+In <<rsdpxsp_state_calibrate,CALIBRATE>> state, it is assumed that the debugger sends at least 1100 `'0'` bits, i.e. edges that are 2 time quanta apart.
 The converter must use the first few edge distances to calculate a new <<rsdpxsp_divider,divider>> value and then verify that at least 1024 following edges have a distance of less than 3 time quanta.
 
 NOTE: This gives some freedom to the implementation how exactly the calibration is done, and allows some latency between calculation of the new <<rsdpxsp_divider,divider>> and using it to measure edge distances.
@@ -190,7 +190,7 @@ To attach to a target from any state, a debugger can use the following sequence:
 
 . Send a rising edge on the SP line and wait sufficiently long (for example 10&nbsp;ms) to ensure the converter is in <<rsdpxsp_state_inactive,INACTIVE>> state.
 . Perform calibration with a time quantum of 50&nbsp;µs, i.e. send an initial falling edge followed by at least 1100 further edges that are 100&nbsp;µs apart.
-. Send an <<escape_sequences.adoc#enable_robust_sequence,ENABLE-ROBUST>> or <<escape_sequences.adoc#enable_robust_sequence,ENABLE-FAST>> sequence and check the target's response.
+. Send an <<escape_sequences.adoc#enable_robust_sequence,ENABLE-ROBUST>> or <<escape_sequences.adoc#enable_fast_sequence,ENABLE-FAST>> sequence and check the target's response.
 
 The debugger can then continue to communicate at this initial speed or it can attempt to switch to a higher frequency, as described in <<rsdpxsp_debugger_highspeed>>.
 
@@ -224,5 +224,5 @@ The debugger can continuously measure responses from the target to compensate fo
 == Platforms with both RSDPxSP and regular RSDP interface
 
 When a target supports both RSDPxSP and the regular two-pin RSDP interface, escape sequences switch between the two modes.
-Both physical interfaces separately wait for an <<escape_sequences.adoc#enable_robust_sequence,ENABLE-ROBUST>> or <<escape_sequences.adoc#enable_robust_sequence,ENABLE-FAST>> sequence.
+Both physical interfaces separately wait for an <<escape_sequences.adoc#enable_robust_sequence,ENABLE-ROBUST>> or <<escape_sequences.adoc#enable_fast_sequence,ENABLE-FAST>> sequence.
 When either interface receives such a sequence, the RSDP-DTM is immediately switched to that interface and generates the response.
