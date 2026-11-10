@@ -17,3 +17,4 @@ jobs:
     uses: riscv-admin/adm-list-notify/.github/workflows/notify.yml@v1
     secrets:
       list_email: ${{ secrets.LIST_NOTIFY_EMAIL }}
+      aws_role: ${{ secrets.LIST_NOTIFY_AWS_ROLE }}
