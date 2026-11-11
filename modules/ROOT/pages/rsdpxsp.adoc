@@ -25,21 +25,21 @@ An example RSDP transaction with request from the debugger and response from the
 [wavedrom,target=fsdpxsp_transaction,svg]
 ----
 {signal: [
-	{name: 'SP (debugger)',    wave: '0...1...0.1.0...1..|0.z.'},
-	{name: 'SP (converter)',   wave: 'z..................|....'},
-	{name: 'state',            wave: '2...2..............|....', data: ['IDLE', 'RECEIVE']},
-	{name: 'RCLK',             wave: 'p...l....plplpl..pl|.pl.'},
-	{name: 'RDAT (converter)', wave: '0.......1.0.....1..|....'},
-	{name: 'RDAT (DTM)',       wave: 'z..................|....'},
+	{name: 'SP (debugger)',    wave: '0.1...0.1.0...1..|0.1.0.'},
+	{name: 'SP (converter)',   wave: 'z................|......'},
+	{name: 'state',            wave: '2.2..............|......', data: ['IDLE', 'RECEIVE']},
+	{name: 'RCLK',             wave: 'p.l....plplpl..pl|.plplp'},
+	{name: 'RDAT (converter)', wave: '0.....1.0.....1..|..0...'},
+	{name: 'RDAT (DTM)',       wave: 'z................|......'},
 	{},
 	{},
 	{},
-	{name: 'SP (debugger)',    wave: 'z..............|.....0..'},
-	{name: 'SP (converter)',   wave: 'z.....0...1.0..|1.0.z...'},
-	{name: 'state',            wave: '2.2...2........|....2...', data: ['RECEIVE', 'IDLE', 'TRANSMIT', 'IDLE']},
-	{name: 'RCLK',             wave: 'l..p..lpl..plpl|.pl..p..'},
-	{name: 'RDAT (converter)', wave: '1.0............|........'},
-	{name: 'RDAT (DTM)',       wave: 'z...010...1.0..|z.......'},
+	{name: 'SP (debugger)',    wave: '0........z......|...0...'},
+	{name: 'SP (converter)',   wave: 'z......0...1.0..|1.0.z..'},
+	{name: 'state',            wave: '2...2..2........|....2..', data: ['RECEIVE', 'IDLE', 'TRANSMIT', 'IDLE']},
+	{name: 'RCLK',             wave: 'l....pplpl..plpl|.pl..p.'},
+	{name: 'RDAT (converter)', wave: '0...............|.......'},
+	{name: 'RDAT (DTM)',       wave: 'z....01.0...1.0.|.z.....'},
 ]}
 ----
 
@@ -155,6 +155,12 @@ NOTE: This means the converter will not send the initial `/ 0b0 /` field of the 
 
 In <<rsdpxp_state_transmit,TRANSMIT>> state, the converter transmits response bits from the RSDP-DTM, sending RCLK pulses as required to pace the data.
 This is the only state where the converter drives the SP line.
+
+The initial `/ 0b0 /` field of the response is not sent.
+The first bit of the `/ START /` field is transmitted by driving the SP line low for 4 time quanta.
+Any following bits are sent by toggling the SP drive value, then waiting for 2 or 4 time quanta, depending on the value of the bit.
+
+The known period where the target drives the SP line low allows the debugger to also drive the line during some of that time, avoiding a floating SP line.
 
 When the RSDP-DTM deasserts the RDAT output enable, the converter will finish the correct number of quanta for the final bit from the RSDP-DTM (due to the RSDP protocol, this will be a `/ 0b0 /` field, i.e. 2 time quanta).
 After this, if the SP line is high, the converter sends an additional clock edge followed by two more time quanta.
