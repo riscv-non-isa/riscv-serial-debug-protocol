@@ -23,14 +23,14 @@ This module has the following signals:
 | `iRSDP_Clk`
 | Connect to RCLK I/O pin. All interfaces of the RSDP transport are synchronous to the rising edge of this clock.
 
-| `iRSDP_Data`
-| Connect to RDAT I/O input buffer's output.
+| `iFrIoreg_Data`
+| Connect to a register driven by the RDAT I/O input buffer's output.
 
-| `oRSDP_DataDir`
-| Connect to RDAT I/O output buffer's enable/tristate control. The level of this pin can be configured with the `gDrive` generic.
+| `oToIoreg_Drv`
+| Connect to a register driving the RDAT I/O output buffer's output enable control.
 
-| `oRSDP_Data`
-| Connect to RDAT I/O output buffer's input.
+| `oToIoreg_Data`
+| Connect to a register driving the RDAT I/O output buffer's input.
 
 | `oUseJtag`
 | To implement an RSDPJ-DTM, use this signal to multiplex between the RSDP transport and the JTAG transport's signals.
@@ -77,10 +77,6 @@ It has the following VHDL generics:
 | Type
 | Description
 
-| `gDrive`
-| `STD_LOGIC`
-| Logic level to use on `oRSDP_DataDir` to indicate that the pin should be driven.
-
 | `gAddressWidth`
 | `NATURAL`
 | Number of address bits. Must be at least 7 and at most 34.
@@ -96,6 +92,9 @@ It has the following VHDL generics:
   When this is set to `false`, the interface state after reset is <<interface_states.adoc#disabled_state,DISABLED>>.
   Since the only difference between these two states is the `oUseJtag` output, this generic only has an effect if that pin is used to multiplex with a JTAG transport.
 |===
+
+In order to allow flexible mapping to technology-specific I/O, neither the output/input registers nor the tristate I/O buffer are implemented inside `riscv_rsdp_transport`.
+A behavioral implementation of the registers is provided as a `riscv_rsdp_ioreg` entity and may be used if no specific I/O register primitives are required.
 
 It is assumed that the DMI bus manager inside an existing JTAG-DTM has similar signals to the `*Jtag_*` signals of this reference implementation.
 Some adaptation may be necessary if the bus manager uses different signals.
