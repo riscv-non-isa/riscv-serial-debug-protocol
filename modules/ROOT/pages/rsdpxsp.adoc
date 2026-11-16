@@ -223,6 +223,15 @@ The debugger can continuously measure responses from the target to compensate fo
 
 == Platforms with both RSDPxSP and regular RSDP interface
 
-When a target supports both RSDPxSP and the regular two-pin RSDP interface, escape sequences switch between the two modes.
+When a target supports both RSDPxSP and two-pin RSDP interfaces, escape sequences switch between the two interfaces.
 Both physical interfaces separately wait for an <<escape_sequences.adoc#enable_robust_sequence,ENABLE-ROBUST>> or <<escape_sequences.adoc#enable_fast_sequence,ENABLE-FAST>> sequence.
 When either interface receives such a sequence, the RSDP-DTM is immediately switched to that interface and generates the response.
+
+Both interfaces may share the same physical pin for RDAT and SP.
+Due to the different encoding of escape sequences for RSDPxSP and two-pin protocols, the debugger can activate either interface.
+If the RCLK pin is used as functional I/O, the target must completely disable the two-pin interface to ensure that unintended activation is impossible.
+
+NOTE: If the single-pin interface is in use via a shared SP/RDAT pin and the RCLK pin is used for functional I/O, it cannot be guaranteed that the two-pin interface will never see a valid escape sequence.
+      The functional use of RCLK could involve rising edges exactly when SP/RDAT has the correct value to advance the sequence detector's state machine.
+      Conversely, it's unlikely that the RDAT pattern of a debugger using the two-wire interface matches the calibration and escape sequences of the RSDPxSP interface.
+      If this were ever to be a practical problem, the debugger could be modified to insert an artificial delay when it comes too close to sending 1024 equally-spaced RDAT edges.
