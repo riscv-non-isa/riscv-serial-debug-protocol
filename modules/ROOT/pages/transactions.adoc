@@ -281,6 +281,8 @@ It is used in <<interface_states.adoc#rsdp_robust_state,RSDP-ROBUST>> state as t
 The debugger can send this transaction type in the <<tt_field,TT>> field if the type of the next transaction is not known yet.
 The actual <<nop_transaction,NOP>> transaction is then executed in the following step, during which the TT field is transmitted for the subsequent operation.
 
+In <<interface_states.adoc#rsdp_fast_state,RSDP-FAST>> state, a debugger may use this instruction or <<intbus_rd_transaction,INTBUS_RD>> to measure the latency of the target's response without causing any side effects.
+
 [[intbus_rd_transaction]]
 === INTBUS_RD transaction
 
