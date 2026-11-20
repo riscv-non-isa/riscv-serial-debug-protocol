@@ -31,29 +31,28 @@ To build the document, you'll need the following tools installed on your system:
 
 === Cloning the Repository
 
-```shell
-git clone --recurse-submodules https://github.com/riscv/docs-spec-template.git
-```
+The build expects the `docs-resources` submodule to be checked out.
+Clone the repository including its submodules:
 
-All in one single line:
+[source,shell]
+----
+git clone --recurse-submodules https://github.com/riscv-non-isa/riscv-serial-debug-protocol.git
+----
 
-```shell
-git clone --recurse-submodules https://github.com/riscv/docs-spec-template.git && cd docs-spec-template && git submodule update --init --recursive
-```
+If the repository was cloned without submodules, or the submodule directories are empty, initialize them afterwards:
 
-[IMPORTANT]
-====
-**Instantiated via GitHub's "Use this template"?**
-GitHub does not populate submodule contents when creating a repository from a template.
-If `docs-resources` is empty, run `git submodule update --init --recursive` in your local workspace. The Makefile will also attempt to auto-initialize submodules on `make build`.
-====
+[source,shell]
+----
+cd riscv-serial-debug-protocol
+git submodule update --init --recursive
+----
 
 === Building the Documentation
 
 To start the build process, run:
 
 ```shell
-cd ./docs-spec-template && make build
+cd ./riscv-serial-debug-protocol && make build
 ```
 
 The link:Makefile[] script will check the availability of Docker on your system:
@@ -72,6 +71,40 @@ To clean up the generated files, run:
 ```shell
 make clean
 ```
+
+== Automated Versioning and Milestones
+
+The repository includes CI automation for specification revision metadata and state transitions.
+
+=== Trigger for automated version bumps
+
+The version bot is triggered manually, by `workflow_dispatch` on `.github/workflows/version-bot.yml`. Merging to `main` does not cut a version; a maintainer decides when to tag one.
+
+=== End-to-end flow
+
+1. A maintainer dispatches `.github/workflows/version-bot.yml` against `main`.
+2. The bot finds the latest `v*` tag and creates the next revision tag (`vMAJOR.MINOR`) for the current `main` commit.
+3. The bot then calls `.github/workflows/build-pdf.yml` and `.github/workflows/publish-site.yml` directly, passing the new version.
+4. The build uses the tag as `:revnumber:` and sets `:revdate:` to the tagged commit's date, so rebuilding a tag reproduces an identical PDF.
+5. `scripts/release-info.sh` derives phase (`:phase:`), display state (`:phase_display:`), warning text (`:phase_notice:`), and `:revremark:` from the version milestone.
+6. The build publishes a GitHub Release with the generated PDF, and opens the site version stamp PR.
+7. The site publish deploys the release to GitHub Pages.
+
+[NOTE]
+====
+The bot invokes those workflows rather than relying on its tag push to trigger
+them, and tags with the built-in `GITHUB_TOKEN` on purpose. GitHub refuses to let
+`GITHUB_TOKEN` start a workflow run, which makes the tag push inert -- so the
+release chain needs no personal access token, and cannot double-fire by
+triggering `push: tags` alongside the direct call. A tag pushed *by hand* still
+builds and releases through `push: tags: v*` as before.
+====
+
+=== Version increment policy:
+
+* Versions are two-digit `vMAJOR.MINOR` as a fixed-point decimal (`v0.6` = 0.60, `v1.0` = 1.00). Ordering is decimal, not semver: `v0.8` (0.80) is greater than `v0.61`.
+* Normal step: advance the revision by `0.01` (`v0.61` -> `v0.62`).
+* Milestone gates (`v0.6`, `v0.8`, `v0.9`, `v0.99`, `v1.0`) are cut manually; the bot never auto-advances onto a gate. When a band is exhausted (for example `v0.79`), a maintainer cuts the next milestone.
 
 === Milestone boundaries
 
