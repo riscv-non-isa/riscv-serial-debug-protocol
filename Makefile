@@ -13,7 +13,7 @@
 # the Doc Template for RISC-V Extensions.
 
 DOCS := \
-	spec-sample.adoc
+	spec-rsdp.adoc
 
 # Spec short name used in ARC-compliant PDF filenames.
 # Override in derived repos: e.g. SPEC_SHORT := Zifoo
@@ -36,9 +36,9 @@ REVMARK ?= $(shell ./scripts/release-info.sh revremark "$(VERSION)")
 MILESTONE_ID ?= $(PHASE)
 
 # In spec mode, pass the phase/milestone attributes through to asciidoctor so
-# spec-sample.adoc's Document State preface and the title-page revremark
+# spec-rsdp.adoc's Document State preface and the title-page revremark
 # render. In doc mode those are empty (see release-info.sh's neutralization),
-# so instead pass a single doc-mode marker attribute: spec-sample.adoc and
+# so instead pass a single doc-mode marker attribute: spec-rsdp.adoc and
 # index.adoc key their ifdef::doc-mode[]/ifndef::doc-mode[] guards off its
 # PRESENCE, not a blank value, which is what lets them drop those sections
 # entirely rather than rendering them empty.
@@ -144,7 +144,7 @@ vpath %.adoc $(SRC_DIR)
 # than the build renaming build/<basename>.pdf afterwards. Inside the container
 # build/ is created by root, so a host-side `mv` into it fails with EPERM on
 # rootful Docker -- which is exactly how v0.61 shipped a non-compliant
-# build/spec-sample.pdf while the log claimed the ARC name. Naming it at the
+# build/spec-rsdp.pdf while the log claimed the ARC name. Naming it at the
 # source removes the failure mode instead of reporting it.
 %.pdf: %.adoc
 	$(DOCKER_CMD) $(DOCKER_QUOTE) $(ASCIIDOCTOR_PDF) $(OPTIONS) $(REQUIRES) -o $(call ARC_PDF,$*) $< $(DOCKER_QUOTE)

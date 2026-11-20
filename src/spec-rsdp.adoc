@@ -14,7 +14,7 @@ ifndef::phase_notice[:phase_notice: Assume everything is subject to change. At t
 ifndef::revremark[:revremark: This document is under development. Expect potential changes. Visit http://riscv.org/spec-state for further details.]
 ifndef::milestone_id[:milestone_id: {phase}]
 endif::doc-mode[]
-ifndef::spec_short[:spec_short: spec-sample]
+ifndef::spec_short[:spec_short: spec-rsdp]
 :docgroup: RISC-V Task Group
 :description: RISC-V Example Specification Document (Zexmpl)
 :revinfo:
