@@ -15,6 +15,7 @@ The following directories are used to organize the contents of this repo:
 
 * `modules/`: the specification content, in Antora layout — chapter pages in `modules/ROOT/pages/`, site navigation in `modules/ROOT/nav.adoc`, and supporting files such as the BibTeX database in `modules/ROOT/resources/`. **This is where you write.**
 * `src/`: the PDF assembler (`spec-sample.adoc`). It is a thin document that `include::`s the same chapter pages from `modules/ROOT/` to produce the ARC submission PDF, so one source tree feeds both the PDF and the HTML site — see link:ANTORA.md[ANTORA.md].
+* `refcode/hdl`: target-side reference implementation and testbench
 * `docs-resources/`: resources for all specifications sourced from link:.gitmodules[git submodule]
 * `scripts/`: versioning and publishing helpers. `release-info.sh` is the single source of version and phase truth for both artifacts; the others stamp the site version, update `SPEC_STATE.md`, and build the GitHub Pages site.
 * `tests/`: shell tests for those helper scripts

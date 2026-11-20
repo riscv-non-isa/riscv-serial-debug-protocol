@@ -1,7 +1,7 @@
 [[reference_implementation]]
 = Reference implementation
 
-A reference implementation of the RSDP transport described in <<system_overview.adoc#system_overview>> can be found at https://gitlab.com/lauterbach/riscv-rsdp-vhdl-ref.
+A reference implementation of the RSDP transport described in <<system_overview.adoc#system_overview>> can be found at https://github.com/riscv-non-isa/riscv-serial-debug-protocol/tree/main/refcode/hdl.
 It has the following port interface:
 
 [[fig_riscv_tw_hw]]
