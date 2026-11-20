@@ -12,6 +12,13 @@ Instead, interim releases will be identified by their commit hash and date, and 
 
 ## [Unreleased]
 
+## [0.0-63bae02] - 2026-11-20
+[spec-rsdp-v0.0-63bae02-20261120.pdf](https://github.com/riscv-non-isa/riscv-serial-debug-protocol/blob/pdfs/spec-rsdp-v0.0-63bae02-20261120.pdf)
+- Make RSDPxSP work without a pull resistor
+- Add clarification for pin sharing with RSDPxSP
+- Add output XOR to / CRC / and / RCRC / fields
+- Update link to reference implementation (now in this repository)
+
 ## [0.0-ccbf69c] - 2026-11-16
 [spec-rsdp-v0.0-ccbf69c-20261116.pdf](https://github.com/riscv-non-isa/riscv-serial-debug-protocol/blob/pdfs/spec-rsdp-v0.0-ccbf69c-20261116.pdf)
 - Change to newly forked template
@@ -20,7 +27,7 @@ Instead, interim releases will be identified by their commit hash and date, and 
 - Fix some typos and improve wording
 - Define that a `DMI_*_SA` transaction after an `ENABLE` sequence is undefined
 - Make it clear that read data is also sent on DMI errors
-- Update reference implementation  port description
+- Update reference implementation port description
 - Add clarification that the NOP transaction serves little use in FAST state
 
 ## Releases on old gitlab repository
