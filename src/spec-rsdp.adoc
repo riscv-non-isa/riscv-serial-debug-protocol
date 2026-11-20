@@ -90,7 +90,7 @@ Copyright 2026 by RISC-V International.
 [preface]
 include::../modules/ROOT/pages/contributors.adoc[leveloffset=+1]
 
-:imagesdir: ../modules/ROOT/images
+:imagesdir: images
 
 include::../modules/ROOT/pages/introduction.adoc[leveloffset=+1]
 include::../modules/ROOT/pages/system_overview.adoc[leveloffset=+1]
