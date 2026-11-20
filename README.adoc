@@ -1,3 +1,13 @@
+= RISC-V Serial Debug Protocol (RSDP) Specification
+
+This repository contains the source of the RISC-V Serial Debug Protocol (RSDP) Specification.
+
+== Overview
+* For an organizational overview of the project and task group, see https://riscv.atlassian.net/browse/RVG-1014[RVG-1014].
+* The corresponding mailing list is https://lists.riscv.org/g/tech-rsdp[tech-rsdp].
+* The https://github.com/riscv-non-isa/riscv-serial-debug-protocol/tree/pdfs[pdfs] branch collects the compiled PDFs. See also the https://github.com/riscv-non-isa/riscv-serial-debug-protocol/blob/main/CHANGELOG.md[CHANGELOG.md] to find the corresponding PDF.
+
+
 = RISC-V Specification Template
 
 This repository serves as a template for creating GitHub repositories within the RISC-V organization for the purpose of developing specifications. It aims to facilitate and standardize the process of specification development.
