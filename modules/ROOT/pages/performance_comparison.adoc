@@ -57,7 +57,7 @@ The 15 accesses in between check the success of the previous operation while sen
 For JTAG, this translates to 17 DR scans, totaling 782 cycles.
 For cJTAG, this amounts to three times the number of cycles at 66&nbsp;% of the frequency, giving an equivalent of 3519 cycles.
 
-For <<interface_states.adoc#rsdp_fast_state,RSDP-FAST>>, this translates to 17 transactions of 12 cycles, and the 7 address bits of the first transaction, latexmath:[$15 \cdot 2$] address bits of subsequent transactions and stem:[$16 \cdot 32$] data bits must additionally be accounted for, totaling 753 cycles.
+For <<interface_states.adoc#rsdp_fast_state,RSDP-FAST>>, this translates to 17 transactions of 12 cycles, and the 7 address bits of the first transaction, stem:[15 \cdot 2] address bits of subsequent transactions and stem:[16 \cdot 32] data bits must additionally be accounted for, totaling 753 cycles.
 
 For <<interface_states.adoc#rsdp_robust_state,RSDP-ROBUST>>, 18 transactions are needed due to TT pipelining and each transaction requires 28 cycles, plus the same payload bits as for <<interface_states.adoc#rsdp_fast_state,RSDP-FAST>>, totaling 1053 cycles.
 
