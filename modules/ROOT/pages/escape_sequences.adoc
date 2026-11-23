@@ -20,7 +20,7 @@ The <<disable_sequence,DISABLE>> sequence is transmitted as follows:
 
 [source,plaintext]
 ----
-/ escape(DISABLE) /                                  -- Sequence from debugger
+/ escape(DISABLE) /                        -- Sequence from debugger
 ----
 
 There is no reply from the target.
@@ -33,9 +33,9 @@ The <<enable_robust_sequence,ENABLE-ROBUST>> sequence and its response from the 
 
 [source,plaintext]
 ----
-/ escape(ENABLE-ROBUST) /                            -- Sequence from debugger
-/ 0b0 / START = 0b011 / STAT / VERSION / CRC / 0b0 / -- Response from target
-/ 0b0 /                                              -- Debugger drives line
+/ escape(ENABLE-ROBUST) /                  -- Sequence from debugger
+/ 0b0 / START = 0b011 / STAT / CRC / 0b0 / -- Response from target
+/ 0b0 /                                    -- Debugger drives line
 ----
 
 If the target supports the <<interface_states.adoc#rsdp_robust_state,RSDP-ROBUST>> state, it must be in that state after receiving this sequence.
@@ -50,9 +50,9 @@ The <<enable_fast_sequence,ENABLE-FAST>> sequence and its response from the targ
 
 [source,plaintext]
 ----
-/ escape(ENABLE-FAST) /                              -- Sequence from debugger
-/ 0b0 / START = 0b1 / STAT / VERSION / 0b0 /         -- Response from target
-/ 0b0 /                                              -- Debugger drives line
+/ escape(ENABLE-FAST) /                    -- Sequence from debugger
+/ 0b0 / START = 0b1 / STAT / 0b0 /         -- Response from target
+/ 0b0 /                                    -- Debugger drives line
 ----
 
 If the target supports the <<interface_states.adoc#rsdp_fast_state,RSDP-FAST>> state, it must be in that state after receiving this sequence.
@@ -67,7 +67,7 @@ The <<enable_jtag_sequence,ENABLE-JTAG>> sequence is transmitted as follows:
 
 [source,plaintext]
 ----
-/ escape(ENABLE-JTAG) /                              -- Sequence from debugger
+/ escape(ENABLE-JTAG) /                    -- Sequence from debugger
 ----
 
 If the target supports the <<interface_states.adoc#jtag_state,JTAG>> state, it must be in that state after receiving this sequence.
@@ -81,10 +81,10 @@ The <<retransmit_sequence,RETRANSMIT>> sequence is transmitted as follows:
 
 [source,plaintext]
 ----
-/ escape(RETRANSMIT) /                               -- Sequence from debugger
-/ 0b0 / START = 0b011 / SEQ / RCRC /                 -- Response from target
-/ STAT / RD-PAYLOAD / CRC / 0b0 /                    -- Retransmitted response
-/ 0b0 /                                              -- Debugger drives line
+/ escape(RETRANSMIT) /                     -- Sequence from debugger
+/ 0b0 / START = 0b011 / SEQ / RCRC /       -- Response from target
+/ STAT / RD-PAYLOAD / CRC / 0b0 /          -- Retransmitted response
+/ 0b0 /                                    -- Debugger drives line
 ----
 
 If the target is in the <<interface_states.adoc#rsdp_robust_state,RSDP-ROBUST>> state, it must send both a response to the sequence and a retransmitted response.
@@ -222,15 +222,6 @@ The CRC generator described in <<crc_computation.adoc#crc>> is fed with the unen
 
 The <<sequence_jtag_end_field,JTAG_END>> field is the fixed 3-bit sequence `/ 0b011 /`.
 This transitions the JTAG state machine into the Run-Test/Idle state and also drives the RDAT line LOW for the target's response included in some sequences.
-
-[[version_seq_field]]
-=== VERSION field
-
-The <<version_seq_field,VERSION>> contains a 32-bit value with information about the RSDP-DTM or RSDPJ-DTM implementation.
-
-The least significant four bits are defined as the constant value `0x1`.
-The remaining bits must be ignored by the debugger, but must be sent as zero by a target.
-Their use, as well as the meaning of other version numbers, is not defined by this version of this document.
 
 [[seq_seq_field]]
 === SEQ field
