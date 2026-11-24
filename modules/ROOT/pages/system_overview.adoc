@@ -81,6 +81,26 @@ To take advantage of the RSDP protocol's robustness and to use the extra JTAG pi
 .Possible RSDPJ-DTM implementation
 image::twj_dtm.svg[]
 
+== Option for package-level multi-drop
+
+Inside large systems, especially multi-die packages, it may be undesirable to route the DMI bus across the entire system.
+These systems may implement multiple DTMs whose RCLK and RDAT lines form a bus.
+The debugger can select an individual DTM for communication by using unique IDs assigned to the DTMs at integration time.
+
+[[fig_intra_package_multidrop]]
+.Possible multi-die RISC-V platform with package-level multidrop
+image::intra_package_multidrop.svg[]
+
+== Option for board-level multi-drop
+
+The RSDP pins of multiple packages can be wired to form a board-level bus.
+Each target must be assigned a unique ID.
+Methods to assign this ID include a register written by the application, assigning the ID with a JTAG chain and using UUIDs available to each package.
+
+[[fig_inter_package_multidrop]]
+.Possible multi-package RISC-V sytem with board-level multidrop
+image::inter_package_multidrop.svg[]
+
 == Option for single-pin debugging
 
 In pin-constrained applications, the RSDP protocol can be converted to a single-pin variant.
@@ -90,6 +110,8 @@ This requires a free-running constant clock source inside the target system, as 
 [[fig_rsdpxsp_system]]
 .Possible RISC-V platform with RSDPxSP transport
 image::rsdpxsp_system.svg[]
+
+The single-pin protocol variant can also support multi-drop.
 
 See <<rsdpxsp.adoc#rsdpxsp>> for more details on the RSDPxSP protocol.
 

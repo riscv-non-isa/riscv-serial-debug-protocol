@@ -33,15 +33,15 @@ The <<enable_robust_sequence,ENABLE-ROBUST>> sequence and its response from the 
 
 [source,plaintext]
 ----
-/ escape(ENABLE-ROBUST) /                  -- Sequence from debugger
-/ 0b0 / START = 0b011 / STAT / CRC / 0b0 / -- Response from target
-/ 0b0 /                                    -- Debugger drives line
+/ escape(ENABLE-ROBUST) / parameter(SELECT) / -- Sequence from debugger
+/ 0b0 / START = 0b011 / STAT / CRC / 0b0 /    -- Response from target
+/ 0b0 /                                       -- Debugger drives line
 ----
 
-If the target supports the <<interface_states.adoc#rsdp_robust_state,RSDP-ROBUST>> state, it must be in that state after receiving this sequence.
+If the target supports the <<interface_states.adoc#rsdp_robust_state,RSDP-ROBUST>> state and its IDs matches the <<sequence_select_field,SELECT>> parameter, it must be in that state after receiving this sequence.
 The <<transactions.adoc#stat_field,STAT>> field contains the constant value <<transactions.adoc#table_stat_encoding,SUCCESS>>.
 
-If the target does not support the <<interface_states.adoc#rsdp_robust_state,RSDP-ROBUST>> state, it will treat the sequence like the <<disable_sequence,DISABLE>> sequence without sending a response.
+If the target does not support the <<interface_states.adoc#rsdp_robust_state,RSDP-ROBUST>> state or its IDs do not match the <<sequence_select_field,SELECT>> parameter, it will treat the sequence like the <<disable_sequence,DISABLE>> sequence without sending a response.
 
 [[enable_fast_sequence]]
 === ENABLE-FAST sequence
@@ -50,15 +50,15 @@ The <<enable_fast_sequence,ENABLE-FAST>> sequence and its response from the targ
 
 [source,plaintext]
 ----
-/ escape(ENABLE-FAST) /                    -- Sequence from debugger
-/ 0b0 / START = 0b1 / STAT / 0b0 /         -- Response from target
-/ 0b0 /                                    -- Debugger drives line
+/ escape(ENABLE-FAST) / parameter(SELECT) / -- Sequence from debugger
+/ 0b0 / START = 0b1 / STAT / 0b0 /          -- Response from target
+/ 0b0 /                                     -- Debugger drives line
 ----
 
-If the target supports the <<interface_states.adoc#rsdp_fast_state,RSDP-FAST>> state, it must be in that state after receiving this sequence.
+If the target supports the <<interface_states.adoc#rsdp_fast_state,RSDP-FAST>> state and its IDs matches the <<sequence_select_field,SELECT>> parameter,, it must be in that state after receiving this sequence.
 The <<transactions.adoc#stat_field,STAT>> field contains the constant value <<transactions.adoc#table_stat_encoding,SUCCESS>>.
 
-If the target does not support the <<interface_states.adoc#rsdp_fast_state,RSDP-FAST>> state, it will treat the sequence like the <<disable_sequence,DISABLE>> sequence without sending a response.
+If the target does not support the <<interface_states.adoc#rsdp_fast_state,RSDP-FAST>> state or its IDs do not match the <<sequence_select_field,SELECT>> parameter, it will treat the sequence like the <<disable_sequence,DISABLE>> sequence without sending a response.
 
 [[enable_jtag_sequence]]
 === ENABLE-JTAG sequence
@@ -101,10 +101,101 @@ Only a sequence that is correctly encoded (constant fields and <<sequence_scrc_f
 Anything else is silently ignored by the sequence detector.
 
 A target conforming to this version of the specification must not send a reply and must enter the <<interface_states.adoc#disabled_state,DISABLED>> state.
-Future versions of this specification may specify additional sequences, for example for new interface states or for multi-drop support.
+Future versions of this specification may specify additional sequences, for example for new interface states.
 
 NOTE: A target can use <<unknown_sequence,UNKNOWN>> as a fallback handler for any of the enable sequences for states it does not support.
       For example, an RSDP-DTM that only supports the <<interface_states.adoc#rsdp_fast_state,RSDP-FAST>> state only needs to handle the <<enable_fast_sequence,ENABLE-FAST>> sequence and can treat any other sequence as <<unknown_sequence,UNKNOWN>>/<<disable_sequence,DISABLE>> sequence.
+
+NOTE: <<unknown_sequence,UNKNOWN>> sequences are detected before any parameter that might belong to the sequence.
+
+[[dtm_selection]]
+== DTM selection in multi-drop scenarios
+
+In a multi-drop scenario, the debugger chooses one of multiple DTMs to be enabled with the parameter of an <<enable_robust_sequence,ENABLE-ROBUST>> or <<enable_fast_sequence,ENABLE-FAST>> sequence.
+These sequences contain a 32-bit <<sequence_select_field,SELECT>> field, which is split into the <<dtm_id,DTM_ID>> and <<package_id,PACKAGE_ID>> values.
+
+[[dtm_id]]
+=== Package-level identifier DTM_ID
+
+The 16-bit <<dtm_id,DTM_ID>> selects one DTM within a package.
+These IDs must be assigned sequentially and uniquely within the package.
+Each particular DTM may be unavailable, meaning it will not respond to <<enable_robust_sequence,ENABLE-ROBUST>> or <<enable_fast_sequence,ENABLE-FAST>> sequences.
+For example, it might not be powered or require some other system-specific action to become available.
+
+The DTM with <<dtm_id,DTM_ID>> zero must always be available if any DTM within its package is available.
+This allows the debugger to read the <<transactions.adoc#rsdpid_register,rsdpid>> register of the package.
+If it cannot be guaranteed that any regular DTM of the package is always available, a dedicated DTM must be implemented for this purpose.
+
+[[package_id]]
+=== Board-level identifier PACKAGE_ID
+
+The 16-bit <<package_id,PACKAGE_ID>> selects a package containing one or more DTMs.
+The initial value of this ID must be zero, but it may be assigned in a volatile or nonvolatile fashion.
+Possible to assign the <<package_id,PACKAGE_ID>> include:
+
+* No assignment possible; In this case, the package does not support board-level multi-drop.
+* Assignment via a register available to the application.
+* Assignment via configuration of a flash boot header, fuse bits, strapping pins or similar.
+* Configuration of either of the previous two methods via the JTAG chain of an RSDPJ-DTM.
+* Assignment via UUID using the <<assign_sequence,ASSIGN>> sequence.
+
+ID zero is special because specifying it in an <<enable_robust_sequence,ENABLE-ROBUST>> or <<enable_fast_sequence,ENABLE-FAST>> sequence maches all packages regardless of their <<package_id,PACKAGE_ID>>.
+This enables the debugger to find a single package whose <<package_id,PACKAGE_ID>> has been set and reading the <<transactions.adoc#rsdpid_register,rsdpid>> register.
+
+NOTE: A package may have multiple DTMs and also support assignment of a <<package_id,PACKAGE_ID>> or even UUID-based enumeration.
+      In this case, a valid implementation may implement all handling of the <<package_id,PACKAGE_ID>> as well as the <<assign_sequence,ENUMERATE>> and <<assign_sequence,ASSIGN>> sequences only in its first DTM.
+      A simple logic output from that DTM can be broadcast to the remaining DTM to inform them whether the package has been selected while a <<enable_robust_sequence,ENABLE-ROBUST>> or <<enable_fast_sequence,ENABLE-FAST>> sequence is transmitted.
+
+[[uuid]]
+=== Package UUID
+
+To provide a way to assign <<package_id,PACKAGE_ID>>, a package may have a universally unique identifier (UUID, cite:[rfc9562]).
+The UUID should use version 4, but other versions are also allowed.
+In particular, version 8 may be used if there is an insufficient number of random bits available.
+The UUID should be constant for the lifetime of a particular package.
+If this is not the case, for example if the UUID is generated at random after power-on reset, this must be documented.
+
+When transmitted in the RSDP protocol, a UUID starts with its most significant Byte, but bits inside each Byte are transmitted in little-endian format.
+
+[[enumerate_sequence]]
+=== ENUMERATE sequence
+
+The debugger can use the <<assign_sequence,ENUMERATE>> sequence to perform a binary search over the space of possible UUIDs to find the UUIDs of packages it is connected to.
+It is sent as follows:
+
+[source,plaintext]
+----
+/ escape(ENUMERATE) / parameter(QUERY) /    -- Sequence from debugger
+/ 0b0 / START = 0b1 / STAT / RANDOM / 0b0 / -- Response from matching target
+/ 0b0 /                                     -- Debugger drives line
+----
+
+Each target sends the constant response if its UUID matches the query.
+This means that zero, one or multiple targets may respond, but the responses are all the same.
+
+After receiving this sequence, the target must be in the <<interface_states.adoc#disabled_state,DISABLED>> state.
+
+A target that implements the <<enumerate_sequence,ENUMERATE>> sequence must implement the <<assign_sequence,ASSIGN>> sequence and vice versa.
+
+[[assign_sequence]]
+=== ASSIGN sequence
+
+When the debugger knows the UUID of a particular package, it can use the <<assign_sequence,ASSIGN>> sequence to assign a <<package_id,PACKAGE_ID>> to that package for all further communcation.
+It is sent as follows:
+
+[source,plaintext]
+----
+/ escape(ASSIGN) / parameter(ASSIGNMENT) / -- Sequence from debugger
+/ 0b0 / START = 0b1 / STAT / 0b0 /         -- Response from matching target
+/ 0b0 /                                    -- Debugger drives line
+----
+
+If the UUID sent as part of the <<sequence_assignment_field,ASSIGNMENT>> field matches, the target sets its <<package_id,PACKAGE_ID>> accordingly and sends the response.
+Otherwise, it does not change its <<package_id,PACKAGE_ID>> and sends no response.
+
+After receiving this sequence, the target must be in the <<interface_states.adoc#disabled_state,DISABLED>> state.
+
+A target that implements the <<enumerate_sequence,ENUMERATE>> sequence must implement the <<assign_sequence,ASSIGN>> sequence and vice versa.
 
 [[sequence_fields]]
 == Sequence fields
@@ -144,8 +235,26 @@ According to these rules, a debugger may use the following table to send these s
 | `escape(ENABLE-FAST)`   | 153 | `0x0C8A024928A54A44542FFFFFFFFFFFFFFFFFFFF`
 | `escape(ENABLE-JTAG)`   | 154 | `0x1854054928A54A44542FFFFFFFFFFFFFFFFFFFF`
 | `escape(RETRANSMIT)`    | 152 | `0x624044928A54A44542FFFFFFFFFFFFFFFFFFFF`
+| `escape(ENUMERATE)`     | 155 | `0x32A8094928A54A44542FFFFFFFFFFFFFFFFFFFF`
+| `escape(ASSIGN)`        | 153 | `0x0D080A4928A54A44542FFFFFFFFFFFFFFFFFFFF`
+| `parameter(SELECT=0)`   |  46 | `0x1AA200000001`
 
 |===
+
+[[sequence_parameter_encoding]]
+=== parameter() encoding
+
+Some sequences include a parameter sent by the debugger.
+The presence and length of this parameter depend on the sequence type.
+By sending the parameter separately, the sequence type is protected with its own CRC, before it is used to determine the length of the parameter.
+In addition, targets can detect sequences they do not support as <<unknown_sequence,UNKNOWN>>.
+
+A <<sequence_parameter_encoding,parameter(param)>> field is transmitted as follows:
+
+[source,plaintext]
+----
+/ JTAG_RESUME / enc(param) / enc(SCRC) / JTAG_END /
+----
 
 [[sequence_ones_field]]
 === ONES field
@@ -208,20 +317,59 @@ The following values are defined:
 | ENABLE-FAST   | `0x02`
 | ENABLE-JTAG   | `0x03`
 | RETRANSMIT    | `0x04`
+| ENUMERATE     | `0x05`
+| ASSIGN        | `0x06`
 | UNKNOWN       | <any other value>
 |===
 
 [[sequence_scrc_field]]
 === SCRC field
 
-The SCRC field contains a 6-bit value computed over all the data following the <<sequence_random_field,RANDOM>> field.
-The CRC generator described in <<crc_computation.adoc#crc>> is fed with the unencoded data: It receives the value of `/ ST /`, not `/ enc(ST) /`.
+The SCRC field contains a 6-bit value computed over the preceding field.
+The CRC generator described in <<crc_computation.adoc#crc>> is fed with the unencoded data, before that data is passed through the <<sequence_enc_encoding,enc()>> encoding.
 
 [[sequence_jtag_end_field]]
 === JTAG_END field
 
 The <<sequence_jtag_end_field,JTAG_END>> field is the fixed 3-bit sequence `/ 0b011 /`.
 This transitions the JTAG state machine into the Run-Test/Idle state and also drives the RDAT line LOW for the target's response included in some sequences.
+
+[[sequence_jtag_resume_field]]
+=== JTAG_RESUME field
+
+The <<sequence_jtag_resume_field,JTAG_RESUME>> field is the fixed 2-bit sequence `/ 0b01 /`.
+This transitions the JTAG state machine into the Capture-DR state.
+
+[[sequence_select_field]]
+=== SELECT field
+
+The 32-bit <<sequence_select_field,SELECT>> field determines which packages respond to an <<enable_robust_sequence,ENABLE-ROBUST>> or <<enable_fast_sequence,ENABLE-FAST>> sequence.
+The least significant 16 bits form the selected <<dtm_id,DTM_ID>>, the most significant bits form the selected <<package_id,PACKAGE_ID>>.
+
+For a particular DTM to respond, the selected <<dtm_id,DTM_ID>> must match the DTM's <<dtm_id,DTM_ID>>.
+If the selected <<package_id,PACKAGE_ID>> is nonzero, it must also match the DTM's <<package_id,PACKAGE_ID>>.
+A selected <<package_id,PACKAGE_ID>> of zero, DTMs match regardless of their <<package_id,PACKAGE_ID>>.
+
+[[sequence_query_field]]
+=== QUERY field
+
+The 129-bit <<sequence_select_field,QUERY>> field determines which packages respond to an <<enumerate_sequence,ENUMERATE>> sequence.
+Bits `8:1` correspond to the most significant (first) Byte of the UUID, bits `128:121` correspond to the least significant (last) Byte of the UUID.
+
+The least significant set bit of the <<sequence_select_field,QUERY>> field determines how many bits of the DTM's UUID are matched against the remaining bits of the <<sequence_select_field,QUERY>> field.
+For example, if bit `0` is set, the full range of bits `128:1` is matched against the DTM's UUID.
+If bits `7:0` are zero and bit `8` is set, only bits `128:9` are matched.
+If all bits `128:0` are zero, no match is done and all packages will respond.
+
+NOTE: The encoding of this field is chosen to allow a target implementation to match its UUID bit-by-bit.
+      This assumes that there is a source inside the chip that can provide the bits or Bytes of the UUID in the correct order.
+      The implementation would tentatively perform the match as the field is received, before checking the <<sequence_scrc_field,SCRC>> field.
+
+[[sequence_assignment_field]]
+=== ASSIGNMENT field
+
+The 144-bit <<sequence_assignment_field,ASSIGNMENT>> field is the parameter of an <<assign_sequence,ASSIGN>> sequence.
+Bits `15:0` form to the new <<package_id,PACKAGE_ID>>, bits `143:16` form an UUID.
 
 [[seq_seq_field]]
 === SEQ field

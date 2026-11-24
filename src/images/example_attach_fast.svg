@@ -14,9 +14,9 @@ text.f1 {font-family:Petrona;font-weight:300;font-size:10.909088px}
 <path d='M-43.003906-34.8242H404.3669' stroke='#000' fill='none' stroke-width='.79701' stroke-miterlimit='10'/>
 <path d='M408.90222-34.82418C408.34362-34.960899 405.89831-35.746055 404.367061-36.59762V-33.05074C405.89831-33.902305 408.34362-34.687462 408.90222-34.82418Z'/>
 <path d='M408.90222-34.82418C408.34362-34.960899 405.89831-35.746055 404.367061-36.59762V-33.05074C405.89831-33.902305 408.34362-34.687462 408.90222-34.82418Z' stroke='#000' fill='none' stroke-width='.79701' stroke-miterlimit='10'/>
-<path d='M118.0119-25.8594H249.5269V-43.793H118.0119Z' fill='#fff'/>
-<path d='M118.0119-25.8594H249.5269V-43.793H118.0119Z' stroke='#000' fill='none' stroke-width='.3985' stroke-miterlimit='10'/>
-<text class='f1' x='-43.005113' y='-62.887691' transform='matrix(1 0 0 1 165.0011 30.8831)'>/<tspan x='-35.925107'>escape(ENABLE-F</tspan><tspan x='48.391229'>AS</tspan><tspan x='60.8494'>T)</tspan><tspan x='73.460313'>/</tspan></text>
+<path d='M60.0159-25.8594H307.5239V-43.793H60.0159Z' fill='#fff'/>
+<path d='M60.0159-25.8594H307.5239V-43.793H60.0159Z' stroke='#000' fill='none' stroke-width='.3985' stroke-miterlimit='10'/>
+<text class='f1' x='-43.005113' y='-62.887691' transform='matrix(1 0 0 1 107.0076 30.8831)'>/<tspan x='-35.925107'>escape(ENABLE-F</tspan><tspan x='48.391229'>AS</tspan><tspan x='60.8494'>T)</tspan><tspan x='73.460313'>/</tspan><tspan x='80.540319'>par</tspan><tspan x='95.813045'>ameter(SELE</tspan><tspan x='156.511212'>C</tspan><tspan x='163.427581'>T=0)</tspan><tspan x='189.445763'>/</tspan></text>
 <path d='M410.5429-6.7617H-36.82812' stroke='#000' fill='none' stroke-width='.79701' stroke-miterlimit='10'/>
 <path d='M-41.36331-6.761719C-40.80472-6.625-38.3594-5.839844-36.828154-4.98828V-8.53516C-38.3594-7.683594-40.80472-6.898438-41.36331-6.761719Z'/>
 <path d='M-41.36331-6.761719C-40.80472-6.625-38.3594-5.839844-36.828154-4.98828V-8.53516C-38.3594-7.683594-40.80472-6.898438-41.36331-6.761719Z' stroke='#000' fill='none' stroke-width='.79701' stroke-miterlimit='10'/>
