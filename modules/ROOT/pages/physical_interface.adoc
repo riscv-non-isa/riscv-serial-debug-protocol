@@ -26,6 +26,19 @@ NOTE: To support higher frequencies, a debugger may optimize its sampling point,
 
 In idle periods between transactions, the debugger can either stop toggling the RCLK line or it can send a continuous stream of '0' bits on the RDAT line.
 
+== Board-level multi-drop
+
+If multiple packages share their RCLK and RDAT lines, this situation is referred to as board-level multi-drop.
+There must be a way to set the <<escape_sequences.adoc#package_id,PACKAGE_ID>> of each package.
+It must be ensured that multiple packages driving RDAT with conflicting values does not cause damage, for example by using suitable series resistors.
+
+Special care must be given to the RCLK signal, as reflections on that signal can render the complete system inaccessible.
+If there is a significant distance between packages, it is recommended to buffer the RCLK signal near the debug connector, providing a point-to-point connection to each package.
+The propagation delay of this buffer should be as low as possible, as it will reduce the maximum clock speed the system can be operated at.
+
+It is possible to connect multiple RSDPJ-DTMs in a JTAG chain.
+This makes it possible to use the JTAG chain for initial programming and setting the <<escape_sequences.adoc#package_id,PACKAGE_ID>>s to unique values.
+
 [[turnaround]]
 == RDAT turnaround at low frequencies
 

@@ -45,6 +45,15 @@ Data must be stable for some time immediately preceding the clock edge, but may 
 launch, latch::
 In timing specifications, launching is the act of a clocked driver of a data line changing the signal to a new value, while latching is the act of sampling the signal.
 The terms are used to specify both the clock edge where these events occur and timing parameters.
+multi-drop::
+Multi-drop refers to a scenario in which more than one RSDP-DTM or RSDPJ-DTM shares both RCLK and RDAT lines.
+[[ro]]
+RO::
+Denotes read-only bit/field -- it does not imply the bit/field will return the same value on every read.
+[[sd]]
+SD::
+Reset value of a field/register is system dependent -- these fields should always have the same values at reset.
+This may be the only value supported.
 
 [[wire_format]]
 == Serial transmission format
