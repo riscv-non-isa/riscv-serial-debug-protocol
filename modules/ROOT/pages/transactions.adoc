@@ -359,7 +359,7 @@ The following registers are defined:
 | RSDP IDentification (<<rsdpid_register,rsdpid>>)
 | <<rsdpid_register>>
 
-| `0x03:0x0F`
+| `0x04:0x0F`
 | Reserved for future versions of this specification
 | <<extensions>>
 
